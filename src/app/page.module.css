@@ -9,7 +9,7 @@
    1. MINIMAL GLASS STICKY HEADER
    ============================================= */
 .header {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-subtle);
@@ -23,23 +23,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  height: 60px;
+  gap: 12px;
+  height: 64px;
 }
 
-.brandRow {
+.brandWrapper {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
-.logoFrame {
-  width: 38px;
-  height: 38px;
+.logoImageContainer {
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-sm);
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #000000;
+  border: 1.5px solid var(--border-default);
+  background: #FFFFFF;
   box-shadow: var(--shadow-xs);
   display: flex;
   align-items: center;
@@ -50,69 +51,68 @@
 .logoImg {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
-.brandInfo {
+.brandText {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.brandTitle {
-  font-size: 1.02rem;
-  font-weight: 700;
+.storeTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
   color: var(--text-main);
   letter-spacing: -0.01em;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.badgeRow {
+.storeMetaRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.liveBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--primary);
-  background: var(--primary-50);
-  padding: 1px 7px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--primary-border);
-}
-
-.liveDot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--primary-light);
-  box-shadow: 0 0 4px rgba(16, 185, 129, 0.6);
-  animation: pulseDot 2s infinite ease-in-out;
-}
-
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.85); }
-}
-
-.hoursBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.7rem;
+  gap: 6px;
+  font-size: 0.74rem;
   color: var(--text-secondary);
-  font-weight: 400;
+  white-space: nowrap;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  flex-shrink: 0;
+}
+
+.metaItem {
+  font-weight: 600;
+  color: #059669;
+}
+
+.dotDivider {
+  color: #CBD5E1;
+}
+
+.metaLocation {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .headerActions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .cartHeaderBtn {
