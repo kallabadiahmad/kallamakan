@@ -16,43 +16,49 @@ export default function ProductCard({ product, onAddToCartNotice }) {
       : [{ id: 'default', size: product.size || 'Reguler', price: product.price, hpp: product.hpp }];
 
   return (
-    <div className={styles.card}>
-      {/* Product Image & Badge */}
-      <div className={styles.imageWrapper}>
-        {product.image ? (
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            sizes="(max-width: 640px) 100vw, 500px"
-            className={styles.productImg}
-            priority={product.id === 'prod_001' || product.id === 'prod_002'}
-          />
-        ) : (
-          <div className={styles.emojiFallback}>
-            <ShoppingBag size={36} />
-          </div>
-        )}
+    <div className={styles.listItemCard}>
+      {/* Top Main Section: Image + Title + Description */}
+      <div className={styles.itemHeader}>
+        {/* Product Thumbnail */}
+        <div className={styles.imageWrapper}>
+          {product.image ? (
+            <Image
+              src={product.image}
+              alt={product.name}
+              width={100}
+              height={100}
+              className={styles.productImg}
+              priority={product.id === 'prod_001' || product.id === 'prod_002'}
+            />
+          ) : (
+            <div className={styles.emojiFallback}>
+              <ShoppingBag size={28} />
+            </div>
+          )}
 
-        {product.badge && (
-          <div className={styles.badgeWrapper}>
+          {product.badge && (
             <span className={styles.badge}>{product.badge}</span>
+          )}
+        </div>
+
+        {/* Product Info */}
+        <div className={styles.itemInfo}>
+          <div className={styles.titleBadgeRow}>
+            <h3 className={styles.title}>{product.name}</h3>
           </div>
-        )}
+          {product.description && (
+            <p className={styles.description}>{product.description}</p>
+          )}
+        </div>
       </div>
 
-      {/* Product Information */}
-      <div className={styles.content}>
-        <h3 className={styles.title}>{product.name}</h3>
-        {product.description && (
-          <p className={styles.description}>{product.description}</p>
-        )}
-
-        {/* Individual Variant Rows with Independent Quantity Controls */}
-        <div className={styles.variantsList}>
+      {/* Bottom Section: Portion / Variant List Options */}
+      <div className={styles.variantsContainer}>
+        <span className={styles.variantsLabel}>Pilih Porsi & Jumlah:</span>
+        <div className={styles.variantsGrid}>
           {variants.map((v) => {
             const vCartItemId = `${product.id}-${v.id || v.size}`;
-            const vCartItem = cartItems.find((item) => item.id === vCartItemId);
+            const vCartItem = (cartItems || []).find((item) => item.id === vCartItemId);
             const vQty = vCartItem ? vCartItem.qty : 0;
 
             return (
@@ -61,7 +67,7 @@ export default function ProductCard({ product, onAddToCartNotice }) {
                 className={`${styles.variantRow} ${vQty > 0 ? styles.variantRowActive : ''}`}
               >
                 <div className={styles.variantDetails}>
-                  <span className={styles.variantSizeName}>{v.size}</span>
+                  <strong className={styles.variantSizeName}>{v.size}</strong>
                   <span className={styles.variantPriceTag}>{formatCurrency(v.price)}</span>
                 </div>
 

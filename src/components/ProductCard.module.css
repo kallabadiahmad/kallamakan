@@ -1,33 +1,37 @@
-.card {
+.listItemCard {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  position: relative;
+  gap: 14px;
   transition: var(--transition-base);
   box-shadow: var(--shadow-card);
-  height: 100%;
 }
 
-.card:hover {
+.listItemCard:hover {
   border-color: var(--border-hover);
   box-shadow: var(--shadow-card-hover);
-  transform: translateY(-2px);
 }
 
-/* Image Banner - Full 1:1 Square */
+/* Top Header: Image + Text Info */
+.itemHeader {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+/* Image Wrapper */
 .imageWrapper {
-  width: 100%;
-  aspect-ratio: 1 / 1;
+  width: 92px;
+  height: 92px;
   position: relative;
   background: var(--bg-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: var(--radius-md);
   overflow: hidden;
   flex-shrink: 0;
+  border: 1px solid var(--border-default);
 }
 
 .productImg {
@@ -35,78 +39,90 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  transition: transform 0.35s ease;
+  transition: transform 0.3s ease;
 }
 
-.card:hover .productImg {
-  transform: scale(1.04);
+.listItemCard:hover .productImg {
+  transform: scale(1.05);
 }
 
 .emojiFallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
   width: 100%;
   height: 100%;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-}
-
-.badgeWrapper {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 5;
+  color: var(--text-muted);
 }
 
 .badge {
+  position: absolute;
+  top: 5px;
+  left: 5px;
   background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   border: 1px solid var(--accent-border);
   color: var(--accent);
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 1px 6px;
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-xs);
   letter-spacing: 0.02em;
 }
 
-/* Content Area */
-.content {
-  padding: 14px;
+/* Info Section */
+.itemInfo {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  flex: 1;
+}
+
+.titleBadgeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .title {
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: var(--text-main);
   line-height: 1.3;
-  margin-bottom: 6px;
   letter-spacing: -0.01em;
 }
 
 .description {
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   color: var(--text-secondary);
   line-height: 1.45;
-  margin-bottom: 10px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  margin-top: 2px;
 }
 
-/* Variants List */
-.variantsList {
+/* Variants Section */
+.variantsContainer {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  margin-top: auto;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-default);
+}
+
+.variantsLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.variantsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 .variantRow {
@@ -116,7 +132,7 @@
   background: var(--bg-body);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
-  padding: 7px 10px;
+  padding: 8px 12px;
   transition: var(--transition-fast);
 }
 
@@ -138,13 +154,13 @@
 
 .variantSizeName {
   font-size: 0.76rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-main);
 }
 
 .variantPriceTag {
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.84rem;
+  font-weight: 800;
   color: var(--primary);
 }
 
@@ -165,6 +181,7 @@
   gap: 4px;
   transition: var(--transition-fast);
   box-shadow: var(--shadow-xs);
+  cursor: pointer;
 }
 
 .btnSmallAdd:hover {
@@ -218,39 +235,22 @@
 
 /* Mobile responsive */
 @media (max-width: 600px) {
-  .imageWrapper {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    height: auto;
-  }
-  .content {
+  .listItemCard {
     padding: 14px;
+    gap: 12px;
+  }
+  .imageWrapper {
+    width: 80px;
+    height: 80px;
   }
   .title {
-    font-size: 0.94rem;
-    margin-bottom: 10px;
+    font-size: 0.92rem;
   }
-  .variantRow {
-    padding: 8px 10px;
+  .description {
+    font-size: 0.74rem;
   }
-  .variantSizeName {
-    font-size: 0.76rem;
-  }
-  .variantPriceTag {
-    font-size: 0.82rem;
-  }
-  .btnSmallAdd {
-    padding: 6px 12px;
-    font-size: 0.75rem;
-  }
-  .qtyControlSmall {
-    height: 28px;
-  }
-  .qtyBtnSmall {
-    width: 24px;
-    height: 28px;
-  }
-  .qtyValueSmall {
-    font-size: 0.78rem;
+  .variantsGrid {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }
