@@ -257,22 +257,106 @@
 
 /* =============================================
    3. CHECKOUT GRID (DESKTOP & MOBILE)
+/* =============================================
+   3. PROGRESS STEPPER (1. MENU -> 2. PENGIRIMAN -> 3. PEMBAYARAN)
    ============================================= */
-.checkoutGrid {
-  display: grid;
-  grid-template-columns: 1.35fr 1fr;
-  gap: 22px;
-  align-items: flex-start;
+.stepperWrapper {
+  max-width: 620px;
+  margin: 0 auto 24px auto;
 }
 
-.leftColumn {
+.stepperTrack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  padding: 6px 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.stepBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-full);
+  transition: var(--transition-fast);
+}
+
+.stepBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.stepBadge {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+
+.stepText {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.stepBtnActive .stepBadge {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+.stepBtnActive .stepText {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.stepBtnDone .stepBadge {
+  background: var(--primary-50);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+}
+
+.stepBtnDone .stepText {
+  color: var(--text-main);
+}
+
+.stepConnector {
+  flex: 1;
+  height: 2px;
+  background: var(--border-default);
+  margin: 0 10px;
+  border-radius: 2px;
+  transition: var(--transition-fast);
+}
+
+.stepConnectorActive {
+  background: var(--primary);
+}
+
+/* ─── Step Content Container ─── */
+.stepContainer {
+  max-width: 680px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.rightColumn {
-  position: relative;
+  animation: fadeIn 0.25s ease;
 }
 
 /* Step 1 Card Section */
@@ -280,12 +364,13 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 22px;
   box-shadow: var(--shadow-card);
   transition: var(--transition-base);
 }
 
 .cardSection:hover {
+  border-color: var(--border-hover);
   box-shadow: var(--shadow-card-hover);
 }
 
@@ -293,7 +378,7 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -309,12 +394,12 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   flex-shrink: 0;
 }
 
 .stepTitle {
-  font-size: 0.98rem;
+  font-size: 1.02rem;
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -0.01em;
@@ -329,8 +414,114 @@
 .productCardsList {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
+
+/* ─── Bottom Action Bar for Step 1 ─── */
+.step1ActionBar {
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.step1SummaryInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.step1QtyBadge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-50);
+  border: 1px solid var(--primary-border);
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+  width: fit-content;
+}
+
+.step1PriceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.step1PriceLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.step1PriceVal {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.btnStep1Proceed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 12px 22px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.28);
+  transition: var(--transition-fast);
+  cursor: pointer;
+}
+
+.btnStep1Proceed:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.38);
+  transform: translateY(-1px);
+}
+
+.btnStep1Proceed:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #94A3B8;
+  box-shadow: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .stepperWrapper {
+    margin-bottom: 18px;
+  }
+
+  .stepperTrack {
+    padding: 6px 10px;
+  }
+
+  .stepText {
+    display: none; /* Icon badges only on very small screens for clean look */
+  }
+
+  .step1ActionBar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+  }
+
+  .btnStep1Proceed {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
 
 /* =============================================
    4. FOOTER

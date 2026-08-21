@@ -9,12 +9,13 @@ import {
   Clock,
   Lock,
   AlertTriangle,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import CheckoutForm from '../components/CheckoutForm';
-import OrderSummary from '../components/OrderSummary';
 import CartDrawer from '../components/CartDrawer';
-import MobileCartBar from '../components/MobileCartBar';
 import InvoiceModal from '../components/InvoiceModal';
 import Toast from '../components/Toast';
 import { useCart } from '../context/CartContext';
@@ -48,6 +49,7 @@ export default function Home() {
   const [createdOrder, setCreatedOrder] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1); // 1: Menu, 2: Pengiriman, 3: Pembayaran & Ringkasan
 
   useEffect(() => {
     setMounted(true);
@@ -65,16 +67,27 @@ export default function Home() {
 
   const activeProducts = (products || []).filter((p) => p.active !== false);
 
-  const handleCheckoutSubmit = (e) => {
-    if (e && e.preventDefault) e.preventDefault();
+  const cartTotalQty = (cartItems || []).reduce((acc, item) => acc + item.qty, 0);
 
-    if ((cartItems || []).length === 0) {
-      addToast('Silakan pilih minimal 1 menu asinan di bawah terlebih dahulu.', 'error');
-      const menuSection = document.getElementById('menu-section');
-      if (menuSection) menuSection.scrollIntoView({ behavior: 'smooth' });
+  const scrollToContent = () => {
+    const el = document.getElementById('checkout-flow');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Step 1 -> Step 2 transition
+  const handleProceedToShipping = () => {
+    if (cartTotalQty === 0) {
+      addToast('Silakan pilih minimal 1 porsi asinan terlebih dahulu.', 'error');
       return;
     }
+    setCurrentStep(2);
+    scrollToContent();
+  };
 
+  // Step 2 -> Step 3 transition with validation
+  const handleProceedToPayment = () => {
     if (!formData.name.trim()) {
       addToast('Mohon masukkan Nama Lengkap Anda.', 'error');
       return;
@@ -86,12 +99,26 @@ export default function Home() {
       return;
     }
     if (!phoneClean.startsWith('0') && !phoneClean.startsWith('62') && !phoneClean.startsWith('8')) {
-      addToast('Format nomor tidak valid. Gunakan format 08xx atau 628xx.', 'error');
+      addToast('Format nomor WhatsApp tidak valid. Gunakan format 08xx atau 628xx.', 'error');
       return;
     }
 
     if (!formData.address.trim()) {
       addToast('Mohon masukkan Alamat Lengkap pengiriman.', 'error');
+      return;
+    }
+
+    setCurrentStep(3);
+    scrollToContent();
+  };
+
+  // Step 3 -> Submit Order via WhatsApp
+  const handleCheckoutSubmit = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+
+    if ((cartItems || []).length === 0) {
+      addToast('Keranjang belanja kosong. Silakan pilih menu asinan terlebih dahulu.', 'error');
+      setCurrentStep(1);
       return;
     }
 
@@ -105,37 +132,50 @@ export default function Home() {
       phone: formData.phone,
       address: formData.address,
       notes: formData.notes,
-      items: [...cartItems],
-      subtotal,
-      totalHPP,
-      grossProfit,
-      shippingCost,
-      shippingName: selectedShipping?.name || 'Kurir',
-      discount,
-      voucherCode: appliedVoucher?.code || null,
-      total,
+      shippingMethod: formData.shippingMethod?.id || selectedShipping?.id || 'kurir',
+      shippingName: formData.shippingMethod?.name || selectedShipping?.name || 'Kurir Pengantaran',
+      shippingCost: shippingCost || 0,
       paymentMethod: formData.paymentMethod,
-      paymentBank: formData.paymentDetails?.bank || 'BCA',
+      paymentBank: formData.paymentMethod === 'transfer' ? formData.paymentDetails?.bank || 'DANA' : '',
+      items: cartItems.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        name: item.name,
+        size: item.size,
+        price: item.price,
+        hpp: item.hpp || 0,
+        qty: item.qty,
+      })),
+      subtotal: subtotal,
+      discount: discount,
+      voucherCode: appliedVoucher?.code || '',
+      total: total,
+      totalHPP: totalHPP,
+      grossProfit: grossProfit,
       status: 'pending',
     };
 
-    // Trigger celebration confetti
+    // 1. Persist in MongoDB
+    if (typeof saveOrder === 'function') {
+      saveOrder(orderRecord);
+    } else {
+      setOrders((prev) => [orderRecord, ...(prev || [])]);
+    }
+
+    // 2. Trigger Celebration Confetti
     try {
       confetti({
         particleCount: 80,
-        spread: 60,
+        spread: 70,
         origin: { y: 0.6 },
-        colors: ['#059669', '#10B981', '#F59E0B', '#3B82F6'],
+        colors: ['#059669', '#10B981', '#34D399', '#EA580C'],
       });
-    } catch (err) {
-      console.log('Confetti error', err);
+    } catch {
+      // ignore
     }
 
-    // Save order to MongoDB & LocalStorage for cashflow tracking in admin
-    saveOrder(orderRecord);
-
-    // Generate WhatsApp message
-    const waMessage = generateWhatsAppMessage({
+    // 3. Open WhatsApp with order text
+    const message = generateWhatsAppMessage({
       orderId,
       cartItems,
       formData,
@@ -147,95 +187,89 @@ export default function Home() {
       voucher: appliedVoucher,
     });
 
-    // Set created order for digital invoice modal
+    const storeWa = settings?.whatsappNumber || CONFIG.WA_NUMBER;
+    openWhatsApp(message, storeWa);
+
+    // 4. Show Invoice Modal
     setCreatedOrder(orderRecord);
-    setIsSubmitting(false);
-
-    // Open WhatsApp
-    openWhatsApp(waMessage, settings?.whatsappNumber || CONFIG.WA_NUMBER);
-
-    // Clear active cart & notify
     clearCart();
-    addToast('Pesanan dicatat! Membuka WhatsApp untuk konfirmasi...', 'success');
+    setIsSubmitting(false);
   };
 
-  const handleOpenWaFromInvoice = () => {
-    if (!createdOrder) return;
-    const waMessage = generateWhatsAppMessage({
-      orderId: createdOrder.id,
-      cartItems: createdOrder.items,
-      formData: {
-        name: createdOrder.customer,
-        phone: createdOrder.phone,
-        address: createdOrder.address,
-        notes: createdOrder.notes,
-        shippingMethod: { name: createdOrder.shippingName },
-        paymentMethod: createdOrder.paymentMethod,
-        paymentDetails: { bank: createdOrder.paymentBank },
-      },
-      subtotal: createdOrder.subtotal,
-      shippingCost: createdOrder.shippingCost,
-      discount: createdOrder.discount,
-      total: createdOrder.total,
-      settings,
-      voucher: createdOrder.voucherCode ? { code: createdOrder.voucherCode } : null,
-    });
-
-    openWhatsApp(waMessage, settings?.whatsappNumber || CONFIG.WA_NUMBER);
-  };
-
-  const storeName = settings?.storeName || 'Kalla Makan';
-  const cartTotalQty = (cartItems || []).reduce((sum, item) => sum + item.qty, 0);
+  const storeName = settings?.storeName || CONFIG.STORE_NAME;
+  const storeHours = settings?.storeHours || CONFIG.STORE_HOURS;
+  const storeLocation = settings?.storeLocation || CONFIG.STORE_LOCATION;
 
   return (
     <div className={styles.pageWrapper}>
-      {/* Toast Notifications */}
+      {/* Toast Notification Container */}
       <Toast toasts={toasts} removeToast={removeToast} />
 
-      {/* Slide-over Cart Drawer */}
-      <CartDrawer />
-
-      {/* Mobile Floating Sticky Bar */}
-      <MobileCartBar />
-
-      {/* Digital Invoice Modal */}
+      {/* Invoice Modal after Order Placed */}
       {createdOrder && (
         <InvoiceModal
           order={createdOrder}
-          onClose={() => setCreatedOrder(null)}
-          onOpenWa={handleOpenWaFromInvoice}
+          onClose={() => {
+            setCreatedOrder(null);
+            setCurrentStep(1);
+          }}
           storeSettings={settings}
+          onOpenWa={() => {
+            const message = generateWhatsAppMessage({
+              orderId: createdOrder.id,
+              cartItems: createdOrder.items,
+              formData: {
+                name: createdOrder.customer,
+                phone: createdOrder.phone,
+                address: createdOrder.address,
+                notes: createdOrder.notes,
+                shippingMethod: { name: createdOrder.shippingName },
+                paymentMethod: createdOrder.paymentMethod,
+                paymentDetails: { bank: createdOrder.paymentBank },
+              },
+              subtotal: createdOrder.subtotal,
+              shippingCost: createdOrder.shippingCost,
+              discount: createdOrder.discount,
+              total: createdOrder.total,
+              settings,
+              voucher: createdOrder.voucherCode ? { code: createdOrder.voucherCode } : null,
+            });
+            openWhatsApp(message, settings?.whatsappNumber || CONFIG.WA_NUMBER);
+          }}
         />
       )}
 
-      {/* Clean Top Header */}
+      {/* Cart Drawer Modal */}
+      <CartDrawer />
+
+      {/* ─── Minimal Glass Header ─── */}
       <header className={styles.header}>
         <div className="container">
           <div className={styles.headerContent}>
-            <div className={styles.brandRow}>
-              <div className={styles.logoFrame}>
+            {/* Brand Logo & Name */}
+            <div className={styles.brandWrapper}>
+              <div className={styles.logoImageContainer}>
                 <Image
                   src="/logo-kallamakan.png"
-                  alt={storeName}
-                  width={48}
-                  height={48}
+                  alt="Kalla Makan Logo"
+                  width={38}
+                  height={38}
                   className={styles.logoImg}
                   priority
                 />
               </div>
-              <div className={styles.brandInfo}>
-                <h1 className={styles.brandTitle}>{storeName}</h1>
-                <div className={styles.badgeRow}>
-                  <span className={styles.liveBadge}>
-                    <span className={styles.liveDot}></span> Buka & Siap Kirim
-                  </span>
-                  <span className={styles.hoursBadge}>
-                    <Clock size={12} /> {settings?.storeHours || '09:00 - 21:00'}
-                  </span>
+              <div className={styles.brandText}>
+                <h1 className={styles.storeTitle}>{storeName}</h1>
+                <div className={styles.storeMetaRow}>
+                  <span className={styles.statusDot}></span>
+                  <span className={styles.metaItem}>Buka • {storeHours}</span>
+                  <span className={styles.dotDivider}>•</span>
+                  <span className={styles.metaLocation}>📍 {storeLocation}</span>
                 </div>
               </div>
             </div>
 
+            {/* Right Action: Cart Button & Admin Link */}
             <div className={styles.headerActions}>
               <button
                 type="button"
@@ -260,7 +294,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Order & Checkout Flow */}
+      {/* ─── Main Content Flow ─── */}
       <main className={styles.main}>
         <div className="container">
           {/* Store Closed Banner */}
@@ -283,23 +317,76 @@ export default function Home() {
 
           {/* Fresh Clean Storefront Hero */}
           <div className={styles.heroBanner}>
-            <span className={styles.heroTag}>Pemesanan Online</span>
+            <span className={styles.heroTag}>Pemesanan Cepat Online</span>
             <h2 className={styles.heroHeading}>Asinan Buah Segar Premium</h2>
             <p className={styles.heroSubheading}>
-              Pilih menu asinan kiamboy atau pomegranate, tentukan porsi & alamat kirim, lalu konfirmasi pesanan langsung via WhatsApp.
+              Pesan asinan buah segar kuah kiamboy & delima merah spesial langsung antar ke lokasi Anda.
             </p>
           </div>
 
-          <div className={styles.checkoutGrid}>
-            {/* Left Column: Product Selection & Customer Checkout Form */}
-            <div className={styles.leftColumn}>
-              {/* Step 1: Menu & Varian Selection */}
-              <section className={styles.cardSection} id="menu-section">
+          {/* ─── 3-STEP PROGRESS STEPPER ─── */}
+          <div className={styles.stepperWrapper} id="checkout-flow">
+            <div className={styles.stepperTrack}>
+              {/* Step 1 Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentStep(1);
+                  scrollToContent();
+                }}
+                className={`${styles.stepBtn} ${currentStep === 1 ? styles.stepBtnActive : ''} ${currentStep > 1 ? styles.stepBtnDone : ''}`}
+              >
+                <span className={styles.stepBadge}>{currentStep > 1 ? '✓' : '1'}</span>
+                <span className={styles.stepText}>1. Pilih Menu</span>
+              </button>
+
+              <div className={`${styles.stepConnector} ${currentStep > 1 ? styles.stepConnectorActive : ''}`} />
+
+              {/* Step 2 Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (cartTotalQty > 0) {
+                    setCurrentStep(2);
+                    scrollToContent();
+                  }
+                }}
+                disabled={cartTotalQty === 0}
+                className={`${styles.stepBtn} ${currentStep === 2 ? styles.stepBtnActive : ''} ${currentStep > 2 ? styles.stepBtnDone : ''}`}
+              >
+                <span className={styles.stepBadge}>{currentStep > 2 ? '✓' : '2'}</span>
+                <span className={styles.stepText}>2. Pengiriman</span>
+              </button>
+
+              <div className={`${styles.stepConnector} ${currentStep > 2 ? styles.stepConnectorActive : ''}`} />
+
+              {/* Step 3 Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (formData.name && formData.phone && formData.address) {
+                    setCurrentStep(3);
+                    scrollToContent();
+                  }
+                }}
+                disabled={!formData.name || !formData.phone || !formData.address}
+                className={`${styles.stepBtn} ${currentStep === 3 ? styles.stepBtnActive : ''}`}
+              >
+                <span className={styles.stepBadge}>3</span>
+                <span className={styles.stepText}>3. Pembayaran</span>
+              </button>
+            </div>
+          </div>
+
+          {/* ─── STEP 1: PILIH MENU ASINAN ─── */}
+          {currentStep === 1 && (
+            <div className={styles.stepContainer}>
+              <section className={styles.cardSection}>
                 <div className={styles.sectionHeaderRow}>
                   <div className={styles.stepNum}>1</div>
                   <div>
-                    <h3 className={styles.stepTitle}>Pilih Menu & Jumlah</h3>
-                    <p className={styles.stepDesc}>Klik tombol pesan dan atur jumlah porsi yang Anda inginkan</p>
+                    <h3 className={styles.stepTitle}>Pilih Menu & Porsi Asinan</h3>
+                    <p className={styles.stepDesc}>Tentukan menu favorit Anda dan klik tombol <strong>+ Tambah</strong></p>
                   </div>
                 </div>
 
@@ -314,31 +401,55 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* Step 2, 3, 4: Checkout Form (Address, Courier, Payment) */}
-              <div id="checkout">
-                <CheckoutForm
-                  formData={formData}
-                  setFormData={setFormData}
-                  onSubmit={handleCheckoutSubmit}
-                  disabled={(cartItems || []).length === 0}
-                  onToast={addToast}
-                />
+              {/* Bottom Sticky Action for Step 1 */}
+              <div className={styles.step1ActionBar}>
+                <div className={styles.step1SummaryInfo}>
+                  <span className={styles.step1QtyBadge}>{cartTotalQty} Item Dipilih</span>
+                  <div className={styles.step1PriceRow}>
+                    <span className={styles.step1PriceLabel}>Subtotal:</span>
+                    <strong className={styles.step1PriceVal}>{formatCurrency(subtotal)}</strong>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleProceedToShipping}
+                  disabled={cartTotalQty === 0}
+                  className={styles.btnStep1Proceed}
+                >
+                  <span>{cartTotalQty > 0 ? 'Lanjut ke Pengiriman' : 'Pilih Menu untuk Lanjut'}</span>
+                  <ArrowRight size={18} />
+                </button>
               </div>
             </div>
+          )}
 
-            {/* Right Column: Sticky Order Summary & WhatsApp Action */}
-            <div className={styles.rightColumn}>
-              <OrderSummary
-                onSubmit={handleCheckoutSubmit}
-                disabled={(cartItems || []).length === 0}
+          {/* ─── STEP 2 & 3: CHECKOUT FORM COMPONENT ─── */}
+          {(currentStep === 2 || currentStep === 3) && (
+            <div className={styles.stepContainer}>
+              <CheckoutForm
+                currentStep={currentStep}
+                formData={formData}
+                setFormData={setFormData}
+                onBackToMenu={() => {
+                  setCurrentStep(1);
+                  scrollToContent();
+                }}
+                onNextToPayment={handleProceedToPayment}
+                onBackToShipping={() => {
+                  setCurrentStep(2);
+                  scrollToContent();
+                }}
+                onSubmitOrder={handleCheckoutSubmit}
                 isSubmitting={isSubmitting}
+                onToast={addToast}
               />
             </div>
-          </div>
+          )}
         </div>
       </main>
 
-      {/* Simple Clean Footer */}
+      {/* ─── Simple Clean Footer ─── */}
       <footer className={styles.simpleFooter}>
         <div className="container">
           <div className={styles.footerContent}>
