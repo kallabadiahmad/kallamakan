@@ -1,0 +1,423 @@
+.checkoutWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cardSection {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-base);
+}
+
+.cardSection:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.sectionTitleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sectionNumber {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--primary-50);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+  font-weight: 700;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sectionTitle {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.sectionSubtitle {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+/* Form Container */
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formRowTwo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fieldLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-body);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fieldIcon {
+  color: var(--primary);
+}
+
+.required {
+  color: var(--danger);
+}
+
+.inputField {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  color: var(--text-main);
+  transition: var(--transition-fast);
+}
+
+@media (min-width: 640px) {
+  .inputField {
+    font-size: 0.88rem;
+    padding: 9px 13px;
+  }
+}
+
+.inputField:focus {
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+.textareaField {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  color: var(--text-main);
+  min-height: 85px;
+  resize: vertical;
+  line-height: 1.45;
+  transition: var(--transition-fast);
+}
+
+@media (min-width: 640px) {
+  .textareaField {
+    font-size: 0.88rem;
+    padding: 9px 13px;
+  }
+}
+
+.textareaField:focus {
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+.fieldHint {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+/* Shipping Options */
+.shippingGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shippingCard {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  background: var(--bg-body);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.shippingCard:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border-hover);
+}
+
+.shippingSelected {
+  background: var(--primary-50) !important;
+  border-color: var(--primary) !important;
+}
+
+.shippingLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.radioCircle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #ffffff;
+  transition: var(--transition-fast);
+}
+
+.shippingSelected .radioCircle,
+.paymentSelected .radioCircle {
+  border-color: var(--primary);
+}
+
+.radioDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.methodIconWrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  flex-shrink: 0;
+  box-shadow: var(--shadow-xs);
+}
+
+.shippingSelected .methodIconWrapper,
+.paymentSelected .methodIconWrapper {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.shippingInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.shippingName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.shippingDesc {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+/* Payment Options */
+.paymentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.paymentCard {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 13px 14px;
+  background: var(--bg-body);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.paymentCard:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border-hover);
+}
+
+.paymentSelected {
+  background: var(--primary-50) !important;
+  border-color: var(--primary) !important;
+}
+
+.paymentCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.paymentIconTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.paymentName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.paymentDesc {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+/* Bank Transfer Details */
+.bankSection {
+  background: var(--bg-body);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-top: 14px;
+}
+
+.bankSectionHeader {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-body);
+  margin-bottom: 10px;
+}
+
+.bankList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bankCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.bankCard:hover {
+  border-color: var(--border-hover);
+}
+
+.bankSelected {
+  border-color: var(--primary) !important;
+  background: #f0fdf4 !important;
+}
+
+.bankInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bankTag {
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+}
+
+.bankNumbers {
+  display: flex;
+  flex-direction: column;
+}
+
+.bankAccount {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.3px;
+}
+
+.bankHolder {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.copyBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-body);
+  border: 1px solid var(--border-default);
+  color: var(--text-main);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.74rem;
+  font-weight: 600;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.copyBtn:hover {
+  background: var(--primary-50);
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+.copiedIcon {
+  color: var(--success);
+}
+
+.bankNote {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .paymentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formRowTwo {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .cardSection {
+    padding: 16px;
+  }
+}

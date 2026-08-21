@@ -1,0 +1,7 @@
+# Robots.txt for Kalla Makan
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://kallamakan.com/sitemap.xml

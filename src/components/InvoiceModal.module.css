@@ -1,0 +1,394 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modalContent {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+  z-index: 10;
+}
+
+.closeBtn:active {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.receiptContainer {
+  padding: 24px 20px 16px 20px;
+}
+
+.receiptHeader {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.successIconWrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px auto;
+}
+
+.successIcon {
+  color: #059669;
+}
+
+.receiptTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 3px;
+}
+
+.receiptSubtitle {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.orderIdBadge {
+  display: inline-block;
+  background: #f1f5f9;
+  border: 1px solid var(--border);
+  color: #0f172a;
+  font-family: monospace;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: var(--radius-full);
+}
+
+.sectionBox {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.sectionHeaderSmall {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #059669;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 5px;
+}
+
+.infoGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.82rem;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.infoLabel {
+  color: #64748b;
+}
+
+.infoVal {
+  color: #0f172a;
+  text-align: right;
+  font-weight: 600;
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.receiptItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 6px;
+}
+
+.receiptItemName {
+  display: flex;
+  flex-direction: column;
+}
+
+.receiptItemName span {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.receiptItemPrice {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.receiptCalc {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.82rem;
+}
+
+.calcLine {
+  display: flex;
+  justify-content: space-between;
+  color: #64748b;
+}
+
+.discountLine {
+  color: #16a34a;
+}
+
+.totalLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.totalAmount {
+  font-size: 1.18rem;
+  color: #059669;
+  font-weight: 800;
+}
+
+/* Payment Guidance */
+.paymentGuidance {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: 0.8rem;
+}
+
+.guidanceHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #c2410c;
+  margin-bottom: 6px;
+}
+
+.bankBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin: 6px 0;
+}
+
+.bankNameTag {
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.bankDetailNumber {
+  display: flex;
+  flex-direction: column;
+}
+
+.accNumber {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.accHolder {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.copyAccBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  color: #0f172a;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.noteTransfer {
+  font-size: 0.72rem;
+  color: #64748b;
+  display: block;
+}
+
+.qrisInstruction {
+  text-align: center;
+}
+
+.qrisImageContainer {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 6px auto;
+  color: #0f172a;
+}
+
+.qrisStoreLabel {
+  font-size: 0.68rem;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.qrisAmountTag {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #059669;
+}
+
+/* Modal Bottom Actions */
+.modalActions {
+  padding: 16px 20px calc(16px + var(--safe-bottom)) 20px;
+  background: #ffffff;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  bottom: 0;
+}
+
+.btnPrimaryWa {
+  width: 100%;
+  background: #16a34a;
+  color: #ffffff;
+  padding: 13px;
+  min-height: 48px;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition-base);
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+}
+
+.btnPrimaryWa:active {
+  background: #15803d;
+}
+
+.subActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btnSubAction {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  color: #334155;
+  padding: 10px;
+  min-height: 42px;
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: var(--transition-fast);
+}
+
+.btnSubAction:active {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+@media (max-width: 480px) {
+  .modalOverlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modalContent {
+    max-height: 94vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .receiptContainer {
+    padding: 20px 16px 12px 16px;
+  }
+}
