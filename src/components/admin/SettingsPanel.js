@@ -44,12 +44,7 @@ export default function SettingsPanel() {
     addToast('Pengaturan toko berhasil disimpan!', 'success');
   };
 
-  const handleChangePassword = () => {
-    const currentPass = localStorage.getItem(CONFIG.STORAGE_KEYS.password) || DEFAULT_PASSWORD;
-    if (passwords.old !== currentPass) {
-      addToast('Password lama salah!', 'error');
-      return;
-    }
+  const handleChangePassword = async () => {
     if (passwords.new !== passwords.confirm) {
       addToast('Konfirmasi password baru tidak cocok!', 'error');
       return;
@@ -58,9 +53,29 @@ export default function SettingsPanel() {
       addToast('Password baru minimal 5 karakter!', 'error');
       return;
     }
-    localStorage.setItem(CONFIG.STORAGE_KEYS.password, passwords.new);
-    addToast('Password admin berhasil diubah!', 'success');
-    setPasswords({ old: '', new: '', confirm: '' });
+
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          oldPassword: passwords.old,
+          newPassword: passwords.new,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem(CONFIG.STORAGE_KEYS.password, passwords.new);
+        addToast('Password admin berhasil diubah di database MongoDB!', 'success');
+        setPasswords({ old: '', new: '', confirm: '' });
+      } else {
+        addToast(data.error || 'Gagal mengubah password', 'error');
+      }
+    } catch (err) {
+      console.error('Change password error:', err);
+      addToast('Gagal terhubung ke server database', 'error');
+    }
   };
 
   return (

@@ -122,7 +122,7 @@ export const DEFAULT_SETTINGS = {
   announcement: '🛒 Form Pemesanan Resmi Kalla Makan • Fast Respon via WhatsApp',
 };
 
-export const DEFAULT_PASSWORD = 'admin123';
+export const DEFAULT_PASSWORD = '@Kalla123';
 
 export const EXPENSE_CATEGORIES = {
   ads_ctwa: 'Biaya Iklan CTWA (Meta/TikTok Ads)',
