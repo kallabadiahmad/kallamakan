@@ -159,8 +159,9 @@ export default function ProductsManager() {
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Tema Warna</label>
             <select className={styles.formInput} value={formData.theme} onChange={e => setFormData({...formData, theme: e.target.value})}>
-              <option value="kiyamboy">Hijau (Kiyamboy)</option>
-              <option value="pomegranite">Merah (Pomegranite)</option>
+              <option value="kiyamboy">Kuning Cerah (Asinan Kiamboy)</option>
+              <option value="pomegranite">Merah Ruby (Asinan Pomegranate)</option>
+              <option value="salad">Hijau Emerald Segar (Salad Buah)</option>
             </select>
           </div>
           <div className={styles.formGroup} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

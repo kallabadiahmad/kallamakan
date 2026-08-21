@@ -18,6 +18,8 @@ export default function ProductCard({ product, onAddToCartNotice }) {
   // Find lowest price to display "Mulai dari Rp xx.xxx"
   const minPrice = Math.min(...variants.map((v) => v.price || 0));
 
+  const [imgError, setImgError] = React.useState(false);
+
   // Count total quantity in cart for this product
   const totalItemQty = (cartItems || [])
     .filter((item) => item.productId === product.id)
@@ -30,7 +32,17 @@ export default function ProductCard({ product, onAddToCartNotice }) {
     product.name?.toLowerCase().includes('delima') ||
     product.theme === 'pomegranite';
 
-  const themeClass = isPomegranate ? styles.themePomegranate : styles.themeKiamboy;
+  const isSalad =
+    product.category?.toLowerCase().includes('salad') ||
+    product.name?.toLowerCase().includes('salad') ||
+    product.theme === 'salad';
+
+  let themeClass = styles.themeKiamboy;
+  if (isPomegranate) {
+    themeClass = styles.themePomegranate;
+  } else if (isSalad) {
+    themeClass = styles.themeSalad;
+  }
 
   return (
     <div
@@ -62,18 +74,19 @@ export default function ProductCard({ product, onAddToCartNotice }) {
         {/* Right Column: Square Thumbnail Image */}
         <div className={styles.itemImageCol}>
           <div className={styles.imageBox}>
-            {product.image ? (
+            {product.image && !imgError ? (
               <Image
                 src={product.image}
                 alt={product.name}
                 width={112}
                 height={112}
                 className={styles.foodImg}
+                onError={() => setImgError(true)}
                 priority={product.id === 'prod_001' || product.id === 'prod_002'}
               />
             ) : (
-              <div className={styles.emojiFallback}>
-                <ShoppingBag size={32} />
+              <div className={`${styles.emojiFallback} ${isSalad ? styles.emojiSalad : isPomegranate ? styles.emojiPomegranate : styles.emojiKiamboy}`}>
+                <span style={{ fontSize: '2.4rem' }}>{product.emoji || (isSalad ? '🥗' : isPomegranate ? '🍇' : '🥭')}</span>
               </div>
             )}
             {totalItemQty > 0 && (

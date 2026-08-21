@@ -26,6 +26,7 @@ export const DEFAULT_PRODUCTS = [
     description: 'Kedondong, mangga muda, jambu kristal, & bengkoang renyah berpadu kuah kiamboy merah asam manis segar melegakan dahaga.',
     category: 'kiamboy',
     badge: 'Best Seller',
+    emoji: '🥭',
     image: '/images/asinan-kiyamboy.jpg',
     active: true,
     variants: [
@@ -39,11 +40,26 @@ export const DEFAULT_PRODUCTS = [
     description: 'Asinan buah premium bertabur butiran buah delima merah segar impor, kaya antioksidan dengan kuah delima segar eksklusif.',
     category: 'pomegranate',
     badge: 'Signature',
+    emoji: '🍇',
     image: '/images/asinan-pomegranate.jpg',
     active: true,
     variants: [
       { id: 'v_400', size: '400ml (Porsi Pas)', price: 85000, hpp: 45000 },
       { id: 'v_600', size: '600ml (Porsi Puas)', price: 135000, hpp: 70000 },
+    ],
+  },
+  {
+    id: 'prod_003',
+    name: 'Salad Buah Segar Premium (Creamy Cheese)',
+    description: 'Kombinasi potongan buah segar (melon, semangka, apel, anggur, kiwi, jelly) disiram saus creamy mayo manis gurih dengan topping keju parut melimpah.',
+    category: 'salad',
+    badge: 'Menu Baru',
+    emoji: '🥗',
+    image: '/images/salad-buah.jpg',
+    active: true,
+    variants: [
+      { id: 'v_300', size: '300ml (Porsi Pas)', price: 25000, hpp: 13000 },
+      { id: 'v_500', size: '500ml (Porsi Puas)', price: 35000, hpp: 18000 },
     ],
   },
 ];

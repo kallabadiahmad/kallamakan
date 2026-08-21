@@ -6,13 +6,27 @@ import { DEFAULT_PRODUCTS } from '@/lib/constants';
 export async function GET() {
   try {
     await connectDB();
-    let products = await Product.find({}).sort({ createdAt: 1 }).lean();
-
-    // Auto-seed default products if database is empty
-    if (!products || products.length === 0) {
-      await Product.insertMany(DEFAULT_PRODUCTS);
-      products = await Product.find({}).sort({ createdAt: 1 }).lean();
+    // Ensure default products exist in MongoDB and stay synced with latest default variants
+    for (const defProd of DEFAULT_PRODUCTS) {
+      const exists = await Product.findOne({ id: defProd.id });
+      if (!exists) {
+        await Product.create(defProd);
+      } else {
+        await Product.updateOne(
+          { id: defProd.id },
+          {
+            $set: {
+              variants: defProd.variants,
+              image: defProd.image,
+              category: defProd.category,
+              badge: defProd.badge,
+            },
+          }
+        );
+      }
     }
+
+    const products = await Product.find({}).sort({ createdAt: 1 }).lean();
 
     return NextResponse.json({ success: true, products });
   } catch (error) {
