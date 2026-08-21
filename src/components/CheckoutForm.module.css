@@ -205,34 +205,101 @@
   line-height: 1.35;
 }
 
-/* ─── Payment Methods ─── */
+/* ─── Payment Methods (Distinct Branded Colors) ─── */
 .paymentGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .paymentCard {
-  background: var(--bg-body);
+  background: var(--bg-surface);
   border: 1.5px solid var(--border-default);
   border-radius: var(--radius-md);
-  padding: 14px;
+  padding: 14px 16px;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  position: relative;
 }
 
-.paymentCard:hover {
-  background: var(--bg-subtle);
-  border-color: var(--border-hover);
+/* 1. Transfer Bank & E-Wallet Theme (Royal Blue / Electric) */
+.paymentCardTransfer:hover {
+  background: #F8FAFC;
+  border-color: #93C5FD;
 }
 
-.paymentSelected {
-  background: var(--primary-50) !important;
-  border-color: var(--primary) !important;
+.paymentSelectedTransfer {
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%) !important;
+  border-color: #2563EB !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.14) !important;
+}
+
+.transferIconWrap {
+  background: #EFF6FF !important;
+  border-color: #BFDBFE !important;
+  color: #2563EB !important;
+}
+
+.paymentSelectedTransfer .transferIconWrap {
+  background: #2563EB !important;
+  border-color: #1D4ED8 !important;
+  color: #FFFFFF !important;
+}
+
+.transferBadge {
+  background: rgba(37, 99, 235, 0.08);
+  color: #1D4ED8;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.radioCircleTransfer {
+  border-color: #2563EB !important;
+}
+
+.radioDotTransfer {
+  background: #2563EB !important;
+}
+
+/* 2. COD (Cash On Delivery) Theme (Warm Amber / Tangerine) */
+.paymentCardCod:hover {
+  background: #F8FAFC;
+  border-color: #FDBA74;
+}
+
+.paymentSelectedCod {
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%) !important;
+  border-color: #EA580C !important;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.14) !important;
+}
+
+.codIconWrap {
+  background: #FFF7ED !important;
+  border-color: #FED7AA !important;
+  color: #EA580C !important;
+}
+
+.paymentSelectedCod .codIconWrap {
+  background: #EA580C !important;
+  border-color: #C2410C !important;
+  color: #FFFFFF !important;
+}
+
+.codBadge {
+  background: rgba(234, 88, 12, 0.08);
+  color: #C2410C;
+  border: 1px solid rgba(234, 88, 12, 0.2);
+}
+
+.radioCircleCod {
+  border-color: #EA580C !important;
+}
+
+.radioDotCod {
+  background: #EA580C !important;
 }
 
 .paymentCardHeader {
@@ -244,13 +311,30 @@
 .paymentIconTitle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.paymentNameCol {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .paymentName {
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-main);
+  line-height: 1.2;
+}
+
+.paymentBadge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+  letter-spacing: 0.02em;
 }
 
 .paymentDesc {
@@ -259,27 +343,35 @@
   line-height: 1.35;
 }
 
-/* ─── Bank Accounts ─── */
+/* ─── Bank Accounts (Unique Branded Colors) ─── */
 .bankSection {
-  background: #FAFAFA;
+  background: #F8FAFC;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  padding: 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  margin-bottom: 6px;
 }
 
 .bankSectionHeader {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bankHeaderIcon {
+  color: #2563EB;
 }
 
 .bankList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
 }
 
 .bankCard {
@@ -288,33 +380,110 @@
   justify-content: space-between;
   background: #FFFFFF;
   border: 1.5px solid var(--border-default);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: all 0.2s ease;
 }
 
-.bankCard:hover {
-  border-color: var(--border-hover);
+/* DANA (Branded Blue) */
+.bankCard_dana:hover {
+  border-color: #118EEA;
+  background: #F0F9FF;
+}
+.bankSelected_dana {
+  border-color: #118EEA !important;
+  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%) !important;
+  box-shadow: 0 3px 12px rgba(17, 142, 234, 0.15) !important;
+}
+.bankRadioActive_dana {
+  border-color: #118EEA !important;
+}
+.bankDot_dana {
+  background: #118EEA !important;
+}
+.copyBtn_dana:hover {
+  border-color: #118EEA !important;
+  color: #118EEA !important;
+  background: #E0F2FE !important;
 }
 
-.bankSelected {
-  border-color: var(--primary) !important;
-  background: var(--primary-50) !important;
+/* BCA (Branded Navy Blue) */
+.bankCard_bca:hover {
+  border-color: #0060AF;
+  background: #EFF6FF;
+}
+.bankSelected_bca {
+  border-color: #0060AF !important;
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%) !important;
+  box-shadow: 0 3px 12px rgba(0, 96, 175, 0.15) !important;
+}
+.bankRadioActive_bca {
+  border-color: #0060AF !important;
+}
+.bankDot_bca {
+  background: #0060AF !important;
+}
+.copyBtn_bca:hover {
+  border-color: #0060AF !important;
+  color: #0060AF !important;
+  background: #DBEAFE !important;
+}
+
+/* BNI (Branded Warm Orange) */
+.bankCard_bni:hover {
+  border-color: #F15A24;
+  background: #FFF7ED;
+}
+.bankSelected_bni {
+  border-color: #F15A24 !important;
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%) !important;
+  box-shadow: 0 3px 12px rgba(241, 90, 36, 0.15) !important;
+}
+.bankRadioActive_bni {
+  border-color: #F15A24 !important;
+}
+.bankDot_bni {
+  background: #F15A24 !important;
+}
+.copyBtn_bni:hover {
+  border-color: #F15A24 !important;
+  color: #F15A24 !important;
+  background: #FFEDD5 !important;
 }
 
 .bankInfo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+}
+
+.bankRadioCircle {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #FFFFFF;
+}
+
+.bankRadioDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
 }
 
 .bankTag {
   color: #FFFFFF;
   font-size: 0.72rem;
   font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 4px;
+  padding: 4px 9px;
+  border-radius: 5px;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .bankNumbers {
@@ -344,26 +513,31 @@
   color: var(--text-secondary);
   font-size: 0.74rem;
   font-weight: 600;
-  padding: 5px 10px;
-  border-radius: var(--radius-xs);
+  padding: 6px 11px;
+  border-radius: var(--radius-sm);
   transition: var(--transition-fast);
   cursor: pointer;
 }
 
-.copyBtn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--primary-50);
+.copyBtnDone {
+  background: #ECFDF5 !important;
+  border-color: #10B981 !important;
+  color: #059669 !important;
+  font-weight: 700 !important;
 }
 
 .copiedIcon {
-  color: var(--primary);
+  color: #10B981;
 }
 
 .bankNote {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  line-height: 1.35;
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  background: #FFFFFF;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
 }
 
 /* ─── Order Items Box in Step 3 ─── */

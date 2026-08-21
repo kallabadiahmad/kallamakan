@@ -270,25 +270,59 @@ export default function CheckoutForm({
           <div className={styles.paymentGrid}>
             {PAYMENT_METHODS.map((method) => {
               const isSelected = formData.paymentMethod === method.id;
-              const IconComponent = method.id === 'transfer' ? Building2 : Banknote;
+              const isTransfer = method.id === 'transfer';
+              const IconComponent = isTransfer ? Building2 : Banknote;
 
               return (
                 <div
                   key={method.id}
                   onClick={() => handlePaymentSelect(method.id)}
                   className={`${styles.paymentCard} ${
-                    isSelected ? styles.paymentSelected : ''
+                    isTransfer ? styles.paymentCardTransfer : styles.paymentCardCod
+                  } ${
+                    isSelected
+                      ? isTransfer
+                        ? styles.paymentSelectedTransfer
+                        : styles.paymentSelectedCod
+                      : ''
                   }`}
                 >
                   <div className={styles.paymentCardHeader}>
                     <div className={styles.paymentIconTitle}>
-                      <div className={styles.methodIconWrapper}>
-                        <IconComponent size={17} className={styles.methodIcon} />
+                      <div
+                        className={`${styles.methodIconWrapper} ${
+                          isTransfer ? styles.transferIconWrap : styles.codIconWrap
+                        }`}
+                      >
+                        <IconComponent size={18} className={styles.methodIcon} />
                       </div>
-                      <strong className={styles.paymentName}>{method.name}</strong>
+                      <div className={styles.paymentNameCol}>
+                        <strong className={styles.paymentName}>{method.name}</strong>
+                        <span
+                          className={`${styles.paymentBadge} ${
+                            isTransfer ? styles.transferBadge : styles.codBadge
+                          }`}
+                        >
+                          {isTransfer ? 'DANA / BCA / BNI' : 'Bayar di Tempat'}
+                        </span>
+                      </div>
                     </div>
-                    <div className={styles.radioCircle}>
-                      {isSelected && <div className={styles.radioDot} />}
+                    <div
+                      className={`${styles.radioCircle} ${
+                        isSelected
+                          ? isTransfer
+                            ? styles.radioCircleTransfer
+                            : styles.radioCircleCod
+                          : ''
+                      }`}
+                    >
+                      {isSelected && (
+                        <div
+                          className={`${styles.radioDot} ${
+                            isTransfer ? styles.radioDotTransfer : styles.radioDotCod
+                          }`}
+                        />
+                      )}
                     </div>
                   </div>
                   <span className={styles.paymentDesc}>{method.description}</span>
@@ -301,6 +335,7 @@ export default function CheckoutForm({
           {formData.paymentMethod === 'transfer' && (
             <div className={styles.bankSection}>
               <div className={styles.bankSectionHeader}>
+                <Building2 size={16} className={styles.bankHeaderIcon} />
                 <span>Pilih Rekening Tujuan Transfer:</span>
               </div>
               <div className={styles.bankList}>
@@ -309,16 +344,28 @@ export default function CheckoutForm({
                     formData.paymentDetails?.bank?.toLowerCase() ===
                     bank.bank.toLowerCase();
                   const isCopied = copiedBank === bank.bank;
+                  const bankKey = bank.bank.toLowerCase();
 
                   return (
                     <div
                       key={bank.bank}
                       onClick={() => handleBankSelect(bank)}
-                      className={`${styles.bankCard} ${
-                        isBankActive ? styles.bankSelected : ''
+                      className={`${styles.bankCard} ${styles[`bankCard_${bankKey}`] || ''} ${
+                        isBankActive ? (styles[`bankSelected_${bankKey}`] || styles.bankSelected) : ''
                       }`}
                     >
                       <div className={styles.bankInfo}>
+                        <div
+                          className={`${styles.bankRadioCircle} ${
+                            isBankActive ? styles[`bankRadioActive_${bankKey}`] : ''
+                          }`}
+                        >
+                          {isBankActive && (
+                            <div
+                              className={`${styles.bankRadioDot} ${styles[`bankDot_${bankKey}`]}`}
+                            />
+                          )}
+                        </div>
                         <span
                           className={styles.bankTag}
                           style={{ background: bank.color }}
@@ -337,7 +384,9 @@ export default function CheckoutForm({
                           e.stopPropagation();
                           handleCopyAccount(bank.number, bank.bank);
                         }}
-                        className={styles.copyBtn}
+                        className={`${styles.copyBtn} ${styles[`copyBtn_${bankKey}`]} ${
+                          isCopied ? styles.copyBtnDone : ''
+                        }`}
                       >
                         {isCopied ? (
                           <>
@@ -356,7 +405,7 @@ export default function CheckoutForm({
                 })}
               </div>
               <span className={styles.bankNote}>
-                *Bukti transfer dapat Anda kirimkan setelah menekan tombol WhatsApp di bawah.
+                💡 <strong>Catatan:</strong> Bukti transfer dapat Anda kirimkan langsung saat chat WhatsApp terbuka setelah klik tombol di bawah.
               </span>
             </div>
           )}

@@ -28,9 +28,11 @@
   --bg-subtle: #F1F5F9;
   --bg-input: #FAFAFA;
   --bg-hover: #F8FAFC;
+  --bg-card-solid: #FFFFFF;
 
   /* Typography Colors - Softer contrasts for modern airiness */
   --text-main: #1E293B;
+  --text-primary: #1E293B;
   --text-body: #475569;
   --text-secondary: #64748B;
   --text-muted: #94A3B8;
@@ -39,6 +41,7 @@
   /* Clean Crisp Borders */
   --border-subtle: rgba(15, 23, 42, 0.05);
   --border-default: #E2E8F0;
+  --border-light: #E2E8F0;
   --border-hover: #CBD5E1;
   --border-focus: #059669;
 
