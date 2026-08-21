@@ -40,10 +40,6 @@ export default function ProductCard({ product, onAddToCartNotice }) {
 
           <h3 className={styles.foodTitle}>{product.name}</h3>
 
-          {product.description && (
-            <p className={styles.foodDescription}>{product.description}</p>
-          )}
-
           <div className={styles.foodPriceBase}>
             <span className={styles.pricePrefix}>Mulai dari</span>
             <span className={styles.priceValue}>{formatCurrency(minPrice)}</span>
