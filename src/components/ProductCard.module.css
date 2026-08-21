@@ -1,40 +1,122 @@
-.listItemCard {
+/* =============================================
+   GOFOOD / GRABFOOD STYLE MENU ITEM CARD
+   ============================================= */
+
+.foodMenuItem {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   transition: var(--transition-base);
   box-shadow: var(--shadow-card);
+  position: relative;
 }
 
-.listItemCard:hover {
+.foodMenuItem:hover {
   border-color: var(--border-hover);
   box-shadow: var(--shadow-card-hover);
 }
 
-/* Top Header: Image + Text Info */
-.itemHeader {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
+.foodMenuItemActive {
+  border-color: rgba(5, 150, 105, 0.4);
+  background: #FCFDFD;
 }
 
-/* Image Wrapper */
-.imageWrapper {
-  width: 92px;
-  height: 92px;
+/* ─── 1. Main Top Row (Details + Image) ─── */
+.itemMainRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+/* Details Column (Left) */
+.itemDetailsCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.badgeWrapper {
+  margin-bottom: 6px;
+}
+
+.foodBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent-50);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+}
+
+.badgeIcon {
+  color: var(--accent);
+}
+
+.foodTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+
+.foodDescription {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.foodPriceBase {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: auto;
+}
+
+.pricePrefix {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.priceValue {
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* Image Column (Right) */
+.itemImageCol {
+  flex-shrink: 0;
+}
+
+.imageBox {
+  width: 110px;
+  height: 110px;
   position: relative;
-  background: var(--bg-subtle);
   border-radius: var(--radius-md);
   overflow: hidden;
-  flex-shrink: 0;
+  background: var(--bg-subtle);
   border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-xs);
 }
 
-.productImg {
+.foodImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -42,7 +124,7 @@
   transition: transform 0.3s ease;
 }
 
-.listItemCard:hover .productImg {
+.foodMenuItem:hover .foodImg {
   transform: scale(1.05);
 }
 
@@ -56,201 +138,238 @@
   color: var(--text-muted);
 }
 
-.badge {
+.totalBadgeQty {
   position: absolute;
-  top: 5px;
-  left: 5px;
-  background: rgba(255, 255, 255, 0.94);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(5, 150, 105, 0.95);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 3px 4px;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  border: 1px solid var(--accent-border);
-  color: var(--accent);
-  font-size: 0.62rem;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: var(--radius-full);
-  box-shadow: var(--shadow-xs);
-  letter-spacing: 0.02em;
 }
 
-/* Info Section */
-.itemInfo {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.titleBadgeRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.title {
-  font-size: 0.98rem;
-  font-weight: 700;
-  color: var(--text-main);
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-}
-
-.description {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  line-height: 1.45;
-  margin-top: 2px;
-}
-
-/* Variants Section */
-.variantsContainer {
+/* ─── 2. Variant / Portion Customization Section (GoFood Style) ─── */
+.variantSelectionSection {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-top: 12px;
+  padding-top: 14px;
   border-top: 1px dashed var(--border-default);
 }
 
-.variantsLabel {
+.variantSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.variantSectionTitle {
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
-.variantsGrid {
+.variantList {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
 }
 
-.variantRow {
+.variantOptionCard {
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: var(--bg-body);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   padding: 8px 12px;
   transition: var(--transition-fast);
 }
 
-.variantRow:hover {
+.variantOptionCard:hover {
   background: var(--bg-subtle);
   border-color: var(--border-hover);
 }
 
-.variantRowActive {
+.variantOptionActive {
   background: var(--primary-50) !important;
   border-color: var(--primary) !important;
 }
 
-.variantDetails {
+.variantMeta {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
-.variantSizeName {
-  font-size: 0.76rem;
+.variantNameRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.variantBullet {
+  color: var(--primary);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.variantSizeTitle {
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--text-main);
 }
 
-.variantPriceTag {
-  font-size: 0.84rem;
+.variantPriceText {
+  font-size: 0.86rem;
   font-weight: 800;
   color: var(--primary);
 }
 
-.variantAction {
+.variantActionCol {
   flex-shrink: 0;
 }
 
-/* Small Add Button */
-.btnSmallAdd {
+/* ─── Iconic Gojek / Grab "+ Tambah" Button ─── */
+.btnAddGojek {
   background: var(--primary);
-  color: var(--text-inverse);
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 4px;
   transition: var(--transition-fast);
-  box-shadow: var(--shadow-xs);
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+  border: 1px solid transparent;
   cursor: pointer;
 }
 
-.btnSmallAdd:hover {
+.btnAddGojek:hover {
   background: var(--primary-hover);
-  box-shadow: var(--shadow-glow-primary);
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35);
+  transform: translateY(-1px);
 }
 
-.btnSmallAdd:active {
+.btnAddGojek:active {
   transform: scale(0.96);
 }
 
-/* Small Quantity Control */
-.qtyControlSmall {
+/* ─── Iconic Gojek / Grab Capsule Stepper [ - 1 + ] ─── */
+.stepperGojek {
   display: flex;
   align-items: center;
   background: var(--bg-surface);
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius-full);
   overflow: hidden;
-  height: 28px;
+  height: 30px;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.15);
 }
 
-.qtyBtnSmall {
-  width: 26px;
-  height: 28px;
+.stepperBtn {
+  width: 28px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-main);
+  color: var(--primary);
   transition: var(--transition-fast);
   cursor: pointer;
+  background: transparent;
 }
 
-.qtyBtnSmall:hover {
+.stepperBtn:hover {
   background: var(--primary-50);
-  color: var(--primary);
 }
 
-.qtyBtnSmall:active {
+.stepperBtn:active {
   background: var(--primary-100);
 }
 
-.qtyValueSmall {
-  padding: 0 4px;
-  font-weight: 700;
-  font-size: 0.78rem;
-  min-width: 20px;
+.stepperQty {
+  padding: 0 6px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  min-width: 22px;
   text-align: center;
   color: var(--text-main);
 }
 
-/* Mobile responsive */
-@media (max-width: 600px) {
-  .listItemCard {
-    padding: 14px;
+/* ─── Mobile Responsive (Authentic Mobile GoFood View) ─── */
+@media (max-width: 640px) {
+  .foodMenuItem {
+    padding: 16px;
+    gap: 14px;
+    border-radius: var(--radius-md);
+  }
+
+  .itemMainRow {
     gap: 12px;
   }
-  .imageWrapper {
-    width: 80px;
-    height: 80px;
+
+  .imageBox {
+    width: 90px;
+    height: 90px;
+    border-radius: var(--radius-sm);
   }
-  .title {
-    font-size: 0.92rem;
+
+  .foodTitle {
+    font-size: 0.96rem;
+    margin-bottom: 4px;
   }
-  .description {
-    font-size: 0.74rem;
+
+  .foodDescription {
+    font-size: 0.76rem;
+    margin-bottom: 6px;
+    -webkit-line-clamp: 2;
   }
-  .variantsGrid {
+
+  .priceValue {
+    font-size: 0.9rem;
+  }
+
+  .variantList {
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 8px;
+  }
+
+  .variantOptionCard {
+    padding: 8px 10px;
+  }
+
+  .variantSizeTitle {
+    font-size: 0.78rem;
+  }
+
+  .variantPriceText {
+    font-size: 0.82rem;
+  }
+
+  .btnAddGojek {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .stepperGojek {
+    height: 28px;
+  }
+
+  .stepperBtn {
+    width: 26px;
+    height: 28px;
+  }
+
+  .stepperQty {
+    font-size: 0.78rem;
   }
 }

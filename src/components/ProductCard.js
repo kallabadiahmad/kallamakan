@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Plus, Minus, ShoppingBag } from 'lucide-react';
+import { Plus, Minus, ShoppingBag, Sparkles } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { formatCurrency } from '../lib/utils';
 import styles from './ProductCard.module.css';
@@ -15,47 +15,74 @@ export default function ProductCard({ product, onAddToCartNotice }) {
       ? product.variants
       : [{ id: 'default', size: product.size || 'Reguler', price: product.price, hpp: product.hpp }];
 
+  // Find lowest price to display "Mulai dari Rp xx.xxx"
+  const minPrice = Math.min(...variants.map((v) => v.price || 0));
+
+  // Count total quantity in cart for this product
+  const totalItemQty = (cartItems || [])
+    .filter((item) => item.productId === product.id)
+    .reduce((sum, item) => sum + item.qty, 0);
+
   return (
-    <div className={styles.listItemCard}>
-      {/* Top Main Section: Image + Title + Description */}
-      <div className={styles.itemHeader}>
-        {/* Product Thumbnail */}
-        <div className={styles.imageWrapper}>
-          {product.image ? (
-            <Image
-              src={product.image}
-              alt={product.name}
-              width={100}
-              height={100}
-              className={styles.productImg}
-              priority={product.id === 'prod_001' || product.id === 'prod_002'}
-            />
-          ) : (
-            <div className={styles.emojiFallback}>
-              <ShoppingBag size={28} />
+    <div className={`${styles.foodMenuItem} ${totalItemQty > 0 ? styles.foodMenuItemActive : ''}`}>
+      {/* ─── Top Main Row (GoFood / GrabFood Item Layout) ─── */}
+      <div className={styles.itemMainRow}>
+        {/* Left Column: Details & Description */}
+        <div className={styles.itemDetailsCol}>
+          {product.badge && (
+            <div className={styles.badgeWrapper}>
+              <span className={styles.foodBadge}>
+                <Sparkles size={11} className={styles.badgeIcon} />
+                {product.badge}
+              </span>
             </div>
           )}
 
-          {product.badge && (
-            <span className={styles.badge}>{product.badge}</span>
+          <h3 className={styles.foodTitle}>{product.name}</h3>
+
+          {product.description && (
+            <p className={styles.foodDescription}>{product.description}</p>
           )}
+
+          <div className={styles.foodPriceBase}>
+            <span className={styles.pricePrefix}>Mulai dari</span>
+            <span className={styles.priceValue}>{formatCurrency(minPrice)}</span>
+          </div>
         </div>
 
-        {/* Product Info */}
-        <div className={styles.itemInfo}>
-          <div className={styles.titleBadgeRow}>
-            <h3 className={styles.title}>{product.name}</h3>
+        {/* Right Column: Square Thumbnail Image */}
+        <div className={styles.itemImageCol}>
+          <div className={styles.imageBox}>
+            {product.image ? (
+              <Image
+                src={product.image}
+                alt={product.name}
+                width={112}
+                height={112}
+                className={styles.foodImg}
+                priority={product.id === 'prod_001' || product.id === 'prod_002'}
+              />
+            ) : (
+              <div className={styles.emojiFallback}>
+                <ShoppingBag size={32} />
+              </div>
+            )}
+            {totalItemQty > 0 && (
+              <span className={styles.totalBadgeQty}>
+                {totalItemQty}x di keranjang
+              </span>
+            )}
           </div>
-          {product.description && (
-            <p className={styles.description}>{product.description}</p>
-          )}
         </div>
       </div>
 
-      {/* Bottom Section: Portion / Variant List Options */}
-      <div className={styles.variantsContainer}>
-        <span className={styles.variantsLabel}>Pilih Porsi & Jumlah:</span>
-        <div className={styles.variantsGrid}>
+      {/* ─── Bottom Section: Portion / Variant Selection (GoFood / GrabFood Style) ─── */}
+      <div className={styles.variantSelectionSection}>
+        <div className={styles.variantSectionHeader}>
+          <span className={styles.variantSectionTitle}>Pilihan Porsi:</span>
+        </div>
+
+        <div className={styles.variantList}>
           {variants.map((v) => {
             const vCartItemId = `${product.id}-${v.id || v.size}`;
             const vCartItem = (cartItems || []).find((item) => item.id === vCartItemId);
@@ -63,48 +90,51 @@ export default function ProductCard({ product, onAddToCartNotice }) {
 
             return (
               <div
-                key={v.id}
-                className={`${styles.variantRow} ${vQty > 0 ? styles.variantRowActive : ''}`}
+                key={v.id || v.size}
+                className={`${styles.variantOptionCard} ${vQty > 0 ? styles.variantOptionActive : ''}`}
               >
-                <div className={styles.variantDetails}>
-                  <strong className={styles.variantSizeName}>{v.size}</strong>
-                  <span className={styles.variantPriceTag}>{formatCurrency(v.price)}</span>
+                <div className={styles.variantMeta}>
+                  <div className={styles.variantNameRow}>
+                    <span className={styles.variantBullet}>•</span>
+                    <strong className={styles.variantSizeTitle}>{v.size}</strong>
+                  </div>
+                  <span className={styles.variantPriceText}>{formatCurrency(v.price)}</span>
                 </div>
 
-                <div className={styles.variantAction}>
+                <div className={styles.variantActionCol}>
                   {vQty === 0 ? (
                     <button
                       type="button"
                       onClick={() => {
                         addToCart(product, v);
                         if (onAddToCartNotice) {
-                          onAddToCartNotice(`${product.name} (${v.size}) ditambahkan!`);
+                          onAddToCartNotice(`${product.name} (${v.size}) ditambahkan ke keranjang!`);
                         }
                       }}
-                      className={styles.btnSmallAdd}
-                      aria-label={`Tambah ${v.size}`}
+                      className={styles.btnAddGojek}
+                      aria-label={`Tambah ${product.name} ${v.size}`}
                     >
-                      <Plus size={14} />
-                      <span>+ Pesan</span>
+                      <Plus size={14} strokeWidth={2.5} />
+                      <span>Tambah</span>
                     </button>
                   ) : (
-                    <div className={styles.qtyControlSmall}>
+                    <div className={styles.stepperGojek}>
                       <button
                         type="button"
                         onClick={() => updateQuantity(vCartItemId, vQty - 1)}
-                        className={styles.qtyBtnSmall}
-                        aria-label="Kurang"
+                        className={styles.stepperBtn}
+                        aria-label="Kurangi porsi"
                       >
-                        <Minus size={13} />
+                        <Minus size={13} strokeWidth={2.5} />
                       </button>
-                      <span className={styles.qtyValueSmall}>{vQty}</span>
+                      <span className={styles.stepperQty}>{vQty}</span>
                       <button
                         type="button"
                         onClick={() => updateQuantity(vCartItemId, vQty + 1)}
-                        className={styles.qtyBtnSmall}
-                        aria-label="Tambah"
+                        className={styles.stepperBtn}
+                        aria-label="Tambah porsi"
                       >
-                        <Plus size={13} />
+                        <Plus size={13} strokeWidth={2.5} />
                       </button>
                     </div>
                   )}
