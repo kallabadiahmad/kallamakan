@@ -1,28 +1,162 @@
 /* =============================================
-   GOFOOD / GRABFOOD STYLE MENU ITEM CARD
+   GOFOOD / GRABFOOD STYLE DISTINCT CONTAINER THEMES
    ============================================= */
 
 .foodMenuItem {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   transition: var(--transition-base);
-  box-shadow: var(--shadow-card);
   position: relative;
+  overflow: hidden;
 }
 
-.foodMenuItem:hover {
-  border-color: var(--border-hover);
-  box-shadow: var(--shadow-card-hover);
+/* ─── THEME 1: KIAMBOY (Fresh Emerald & Lime Green) ─── */
+.themeKiamboy {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F6FDF9 100%);
+  border: 1.5px solid #BBF7D0;
+  box-shadow: 0 2px 10px rgba(5, 150, 105, 0.05);
 }
 
-.foodMenuItemActive {
-  border-color: rgba(5, 150, 105, 0.4);
-  background: #FCFDFD;
+.themeKiamboy:hover {
+  border-color: #34D399;
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.12);
+  transform: translateY(-1px);
+}
+
+.themeKiamboy .foodBadge {
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: #047857;
+}
+
+.themeKiamboy .badgeIcon {
+  color: #059669;
+}
+
+.themeKiamboy .priceValue {
+  color: #059669;
+}
+
+.themeKiamboy .imageBox {
+  border: 1.5px solid #A7F3D0;
+}
+
+.themeKiamboy .variantBullet {
+  color: #059669;
+}
+
+.themeKiamboy .variantPriceText {
+  color: #059669;
+}
+
+.themeKiamboy .btnAddAction {
+  background: #059669;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+}
+
+.themeKiamboy .btnAddAction:hover {
+  background: #047857;
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35);
+}
+
+.themeKiamboy .stepperAction {
+  border: 1.5px solid #059669;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.15);
+}
+
+.themeKiamboy .stepperBtn {
+  color: #059669;
+}
+
+.themeKiamboy .stepperBtn:hover {
+  background: #ECFDF5;
+}
+
+.themeKiamboy .variantOptionActive {
+  background: #ECFDF5 !important;
+  border-color: #059669 !important;
+}
+
+.themeKiamboy.foodMenuItemActive {
+  border-color: #10B981;
+  background: linear-gradient(180deg, #FFFFFF 0%, #EDFCF4 100%);
+  box-shadow: 0 4px 18px rgba(5, 150, 105, 0.15);
+}
+
+/* ─── THEME 2: POMEGRANATE (Rich Ruby & Crimson Red) ─── */
+.themePomegranate {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF5F6 100%);
+  border: 1.5px solid #FECDD3;
+  box-shadow: 0 2px 10px rgba(225, 29, 72, 0.05);
+}
+
+.themePomegranate:hover {
+  border-color: #FB7185;
+  box-shadow: 0 8px 24px rgba(225, 29, 72, 0.12);
+  transform: translateY(-1px);
+}
+
+.themePomegranate .foodBadge {
+  background: #FFF1F2;
+  border: 1px solid #FECDD3;
+  color: #BE123C;
+}
+
+.themePomegranate .badgeIcon {
+  color: #E11D48;
+}
+
+.themePomegranate .priceValue {
+  color: #E11D48;
+}
+
+.themePomegranate .imageBox {
+  border: 1.5px solid #FECDD3;
+}
+
+.themePomegranate .variantBullet {
+  color: #E11D48;
+}
+
+.themePomegranate .variantPriceText {
+  color: #E11D48;
+}
+
+.themePomegranate .btnAddAction {
+  background: #E11D48;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
+}
+
+.themePomegranate .btnAddAction:hover {
+  background: #BE123C;
+  box-shadow: 0 4px 10px rgba(225, 29, 72, 0.35);
+}
+
+.themePomegranate .stepperAction {
+  border: 1.5px solid #E11D48;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.15);
+}
+
+.themePomegranate .stepperBtn {
+  color: #E11D48;
+}
+
+.themePomegranate .stepperBtn:hover {
+  background: #FFF1F2;
+}
+
+.themePomegranate .variantOptionActive {
+  background: #FFF1F2 !important;
+  border-color: #E11D48 !important;
+}
+
+.themePomegranate.foodMenuItemActive {
+  border-color: #F43F5E;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFEBEF 100%);
+  box-shadow: 0 4px 18px rgba(225, 29, 72, 0.15);
 }
 
 /* ─── 1. Main Top Row (Details + Image) ─── */
@@ -33,7 +167,6 @@
   gap: 16px;
 }
 
-/* Details Column (Left) */
 .itemDetailsCol {
   flex: 1;
   display: flex;
@@ -41,45 +174,27 @@
 }
 
 .badgeWrapper {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .foodBadge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: var(--accent-50);
-  border: 1px solid var(--accent-border);
-  color: var(--accent);
   font-size: 0.68rem;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: var(--radius-full);
   letter-spacing: 0.02em;
 }
 
-.badgeIcon {
-  color: var(--accent);
-}
-
 .foodTitle {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-main);
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: #0F172A;
   line-height: 1.35;
   letter-spacing: -0.01em;
-  margin-bottom: 6px;
-}
-
-.foodDescription {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
   margin-bottom: 10px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .foodPriceBase {
@@ -90,14 +205,14 @@
 }
 
 .pricePrefix {
-  font-size: 0.75rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
+  font-weight: 500;
 }
 
 .priceValue {
-  font-size: 0.96rem;
+  font-size: 1rem;
   font-weight: 800;
-  color: var(--primary);
 }
 
 /* Image Column (Right) */
@@ -109,10 +224,9 @@
   width: 110px;
   height: 110px;
   position: relative;
-  border-radius: var(--radius-md);
+  border-radius: 14px;
   overflow: hidden;
   background: var(--bg-subtle);
-  border: 1px solid var(--border-default);
   box-shadow: var(--shadow-xs);
 }
 
@@ -143,7 +257,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(5, 150, 105, 0.95);
+  background: rgba(15, 23, 42, 0.85);
   color: #ffffff;
   font-size: 0.65rem;
   font-weight: 700;
@@ -186,21 +300,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-body);
+  background: #FFFFFF;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  padding: 8px 12px;
+  padding: 10px 12px;
   transition: var(--transition-fast);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .variantOptionCard:hover {
-  background: var(--bg-subtle);
   border-color: var(--border-hover);
-}
-
-.variantOptionActive {
-  background: var(--primary-50) !important;
-  border-color: var(--primary) !important;
+  background: #FAFAFA;
 }
 
 .variantMeta {
@@ -216,7 +326,6 @@
 }
 
 .variantBullet {
-  color: var(--primary);
   font-size: 0.9rem;
   line-height: 1;
 }
@@ -228,18 +337,16 @@
 }
 
 .variantPriceText {
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   font-weight: 800;
-  color: var(--primary);
 }
 
 .variantActionCol {
   flex-shrink: 0;
 }
 
-/* ─── Iconic Gojek / Grab "+ Tambah" Button ─── */
-.btnAddGojek {
-  background: var(--primary);
+/* ─── Action Button (+ Tambah) ─── */
+.btnAddAction {
   color: #ffffff;
   padding: 6px 14px;
   border-radius: var(--radius-full);
@@ -249,31 +356,22 @@
   align-items: center;
   gap: 4px;
   transition: var(--transition-fast);
-  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
   border: 1px solid transparent;
   cursor: pointer;
 }
 
-.btnAddGojek:hover {
-  background: var(--primary-hover);
-  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.35);
-  transform: translateY(-1px);
-}
-
-.btnAddGojek:active {
+.btnAddAction:active {
   transform: scale(0.96);
 }
 
-/* ─── Iconic Gojek / Grab Capsule Stepper [ - 1 + ] ─── */
-.stepperGojek {
+/* ─── Capsule Stepper [ - 1 + ] ─── */
+.stepperAction {
   display: flex;
   align-items: center;
-  background: var(--bg-surface);
-  border: 1.5px solid var(--primary);
+  background: #FFFFFF;
   border-radius: var(--radius-full);
   overflow: hidden;
   height: 30px;
-  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.15);
 }
 
 .stepperBtn {
@@ -282,30 +380,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
   transition: var(--transition-fast);
   cursor: pointer;
   background: transparent;
 }
 
-.stepperBtn:hover {
-  background: var(--primary-50);
-}
-
-.stepperBtn:active {
-  background: var(--primary-100);
-}
-
 .stepperQty {
   padding: 0 6px;
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   min-width: 22px;
   text-align: center;
   color: var(--text-main);
 }
 
-/* ─── Mobile Responsive (Authentic Mobile GoFood View) ─── */
+/* ─── Mobile Responsive ─── */
 @media (max-width: 640px) {
   .foodMenuItem {
     padding: 16px;
@@ -318,24 +407,18 @@
   }
 
   .imageBox {
-    width: 90px;
-    height: 90px;
+    width: 92px;
+    height: 92px;
     border-radius: var(--radius-sm);
   }
 
   .foodTitle {
-    font-size: 0.96rem;
-    margin-bottom: 4px;
-  }
-
-  .foodDescription {
-    font-size: 0.76rem;
+    font-size: 0.98rem;
     margin-bottom: 6px;
-    -webkit-line-clamp: 2;
   }
 
   .priceValue {
-    font-size: 0.9rem;
+    font-size: 0.92rem;
   }
 
   .variantList {
@@ -352,15 +435,15 @@
   }
 
   .variantPriceText {
-    font-size: 0.82rem;
+    font-size: 0.84rem;
   }
 
-  .btnAddGojek {
+  .btnAddAction {
     padding: 6px 12px;
     font-size: 0.75rem;
   }
 
-  .stepperGojek {
+  .stepperAction {
     height: 28px;
   }
 
@@ -370,6 +453,6 @@
   }
 
   .stepperQty {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
   }
 }

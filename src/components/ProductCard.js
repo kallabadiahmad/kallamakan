@@ -23,11 +23,24 @@ export default function ProductCard({ product, onAddToCartNotice }) {
     .filter((item) => item.productId === product.id)
     .reduce((sum, item) => sum + item.qty, 0);
 
+  // Determine theme by product category / name
+  const isPomegranate =
+    product.category?.toLowerCase().includes('pomegranate') ||
+    product.name?.toLowerCase().includes('pomegranate') ||
+    product.name?.toLowerCase().includes('delima') ||
+    product.theme === 'pomegranite';
+
+  const themeClass = isPomegranate ? styles.themePomegranate : styles.themeKiamboy;
+
   return (
-    <div className={`${styles.foodMenuItem} ${totalItemQty > 0 ? styles.foodMenuItemActive : ''}`}>
+    <div
+      className={`${styles.foodMenuItem} ${themeClass} ${
+        totalItemQty > 0 ? styles.foodMenuItemActive : ''
+      }`}
+    >
       {/* ─── Top Main Row (GoFood / GrabFood Item Layout) ─── */}
       <div className={styles.itemMainRow}>
-        {/* Left Column: Details & Description */}
+        {/* Left Column: Details */}
         <div className={styles.itemDetailsCol}>
           {product.badge && (
             <div className={styles.badgeWrapper}>
@@ -72,7 +85,7 @@ export default function ProductCard({ product, onAddToCartNotice }) {
         </div>
       </div>
 
-      {/* ─── Bottom Section: Portion / Variant Selection (GoFood / GrabFood Style) ─── */}
+      {/* ─── Bottom Section: Portion / Variant Selection ─── */}
       <div className={styles.variantSelectionSection}>
         <div className={styles.variantSectionHeader}>
           <span className={styles.variantSectionTitle}>Pilihan Porsi:</span>
@@ -87,7 +100,9 @@ export default function ProductCard({ product, onAddToCartNotice }) {
             return (
               <div
                 key={v.id || v.size}
-                className={`${styles.variantOptionCard} ${vQty > 0 ? styles.variantOptionActive : ''}`}
+                className={`${styles.variantOptionCard} ${
+                  vQty > 0 ? styles.variantOptionActive : ''
+                }`}
               >
                 <div className={styles.variantMeta}>
                   <div className={styles.variantNameRow}>
@@ -107,14 +122,14 @@ export default function ProductCard({ product, onAddToCartNotice }) {
                           onAddToCartNotice(`${product.name} (${v.size}) ditambahkan ke keranjang!`);
                         }
                       }}
-                      className={styles.btnAddGojek}
+                      className={styles.btnAddAction}
                       aria-label={`Tambah ${product.name} ${v.size}`}
                     >
                       <Plus size={14} strokeWidth={2.5} />
                       <span>Tambah</span>
                     </button>
                   ) : (
-                    <div className={styles.stepperGojek}>
+                    <div className={styles.stepperAction}>
                       <button
                         type="button"
                         onClick={() => updateQuantity(vCartItemId, vQty - 1)}
