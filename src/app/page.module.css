@@ -417,17 +417,24 @@
   gap: 16px;
 }
 
-/* ─── Bottom Action Bar for Step 1 ─── */
+/* ─── Bottom Sticky Action Bar for Step 1 ─── */
 .step1ActionBar {
-  background: var(--bg-surface);
-  border: 1.5px solid var(--border-default);
+  position: sticky;
+  bottom: calc(var(--safe-bottom) + 16px);
+  z-index: 80;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid var(--primary-border);
   border-radius: var(--radius-lg);
-  padding: 16px 20px;
+  padding: 14px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(5, 150, 105, 0.08);
+  margin-top: 10px;
+  transition: var(--transition-base);
 }
 
 .step1SummaryInfo {
@@ -498,6 +505,10 @@
 }
 
 @media (max-width: 640px) {
+  .stepContainer {
+    padding-bottom: 90px;
+  }
+
   .stepperWrapper {
     margin-bottom: 18px;
   }
@@ -511,14 +522,31 @@
   }
 
   .step1ActionBar {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 14px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 20px 20px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    border-top: 1.5px solid var(--primary-border);
+    padding: 12px 16px calc(var(--safe-bottom) + 12px) 16px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.12);
+    z-index: 90;
+    margin-top: 0;
+  }
+
+  .step1PriceVal {
+    font-size: 1.05rem;
   }
 
   .btnStep1Proceed {
-    justify-content: center;
-    width: 100%;
+    padding: 10px 16px;
+    font-size: 0.86rem;
   }
 }
 

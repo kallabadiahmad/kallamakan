@@ -714,13 +714,24 @@
   color: var(--primary);
 }
 
-/* ─── Step Navigation Buttons ─── */
+/* ─── Step Navigation Buttons (Sticky Bottom) ─── */
 .stepNavigationRow {
+  position: sticky;
+  bottom: calc(var(--safe-bottom) + 16px);
+  z-index: 80;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 4px;
+  margin-top: 10px;
+  transition: var(--transition-base);
 }
 
 .btnSecondaryBack {
@@ -883,6 +894,10 @@
 
 /* ─── Mobile Responsive ─── */
 @media (max-width: 640px) {
+  .checkoutWrapper {
+    padding-bottom: 90px;
+  }
+
   .formRowTwo,
   .shippingGrid,
   .paymentGrid {
@@ -891,13 +906,42 @@
   }
 
   .stepNavigationRow {
-    flex-direction: column-reverse;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 20px 20px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    border-top: 1px solid var(--border-default);
+    padding: 12px 16px calc(var(--safe-bottom) + 12px) 16px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.12);
+    z-index: 90;
+    margin-top: 0;
   }
 
-  .btnSecondaryBack,
-  .btnPrimaryNext,
+  .btnSecondaryBack {
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .btnPrimaryNext {
+    padding: 10px 16px;
+    font-size: 0.86rem;
+    flex: 1;
+    justify-content: center;
+  }
+
   .btnConfirmWa {
-    width: 100%;
+    padding: 10px 16px;
+    font-size: 0.86rem;
+    flex: 1;
     justify-content: center;
   }
 }
