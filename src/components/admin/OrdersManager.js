@@ -40,7 +40,6 @@ function parseWAText(rawText, products) {
 
   // Try to extract name — look for "nama:", "atas nama:", "a/n", or just a name-like pattern
   for (const line of lines) {
-    const nameLower = line.toLowerCase();
     const namePatterns = [
       /(?:nama|name|a\/n|atas\s*nama)\s*[:=\-]?\s*(.+)/i,
     ];
@@ -74,7 +73,6 @@ function parseWAText(rawText, products) {
     for (const prod of products) {
       if (!prod.active) continue;
       const prodNameLower = prod.name.toLowerCase();
-      // Check if any keyword from product name appears in the text
       const keywords = prodNameLower.split(/[\s\-\(\)]+/).filter((w) => w.length > 3);
       const nameMatches = keywords.some((kw) => fullTextLower.includes(kw));
 
@@ -101,9 +99,8 @@ function parseWAText(rawText, products) {
         }
 
         // Try to detect variant/size
-        let selectedVariant = prod.variants?.[0]; // default to first
+        let selectedVariant = prod.variants?.[0];
         if (prod.variants && prod.variants.length > 1) {
-          // Check for size keywords
           if (fullTextLower.includes('600') || fullTextLower.includes('besar') || fullTextLower.includes('puas') || fullTextLower.includes('500')) {
             selectedVariant = prod.variants.find((v) => v.size.includes('600') || v.size.includes('500') || v.size.toLowerCase().includes('puas')) || prod.variants[1];
           } else if (fullTextLower.includes('400') || fullTextLower.includes('kecil') || fullTextLower.includes('pas') || fullTextLower.includes('300')) {
@@ -116,7 +113,7 @@ function parseWAText(rawText, products) {
           name: prod.name,
           emoji: prod.emoji || '📦',
           size: selectedVariant?.size || '',
-          variantId: selectedVariant?.id || '',
+          variantId: selectedVariant?.id || 'default',
           price: selectedVariant?.price || 0,
           qty,
         });
@@ -148,12 +145,18 @@ export default function OrdersManager() {
     items: [], // { productId, name, emoji, size, variantId, price, qty }
   });
   const [ocrLoading, setOcrLoading] = useState(false);
-  const [ocrPreview, setOcrPreview] = useState(null); // image preview URL
-  const [ocrText, setOcrText] = useState(''); // raw OCR text for debug
+  const [ocrPreview, setOcrPreview] = useState(null);
+  const [ocrText, setOcrText] = useState('');
   const fileInputRef = useRef(null);
+
+  // ─── Product Picker Selection State ───
+  const [selectedProdId, setSelectedProdId] = useState('');
+  const [selectedVariantId, setSelectedVariantId] = useState('');
+  const [selectedQty, setSelectedQty] = useState(1);
 
   const allOrders = orders || [];
   const filteredOrders = filter === 'all' ? allOrders : allOrders.filter((o) => o.status === filter);
+  const activeProducts = (products || []).filter((p) => p.active !== false);
 
   // ─── Existing Order Actions ───
   const updateStatus = (id, newStatus) => {
@@ -269,73 +272,91 @@ export default function OrdersManager() {
 
   const openNewOrder = () => {
     resetNewOrderForm();
+    if (activeProducts.length > 0) {
+      setSelectedProdId(activeProducts[0].id);
+      setSelectedVariantId(activeProducts[0].variants?.[0]?.id || 'default');
+    }
+    setSelectedQty(1);
     setIsNewOrderOpen(true);
   };
 
-  const addItemToOrder = () => {
-    const activeProducts = (products || []).filter((p) => p.active !== false);
-    if (activeProducts.length === 0) return;
-    const first = activeProducts[0];
-    const firstVariant = first.variants?.[0];
-
-    setNewOrder((prev) => ({
-      ...prev,
-      items: [
-        ...prev.items,
-        {
-          productId: first.id,
-          name: first.name,
-          emoji: first.emoji || '📦',
-          size: firstVariant?.size || '',
-          variantId: firstVariant?.id || '',
-          price: firstVariant?.price || 0,
-          qty: 1,
-        },
-      ],
-    }));
+  // When admin selects a product from the picker
+  const handleSelectProduct = (prodId) => {
+    setSelectedProdId(prodId);
+    const prod = (products || []).find((p) => p.id === prodId);
+    if (prod && prod.variants && prod.variants.length > 0) {
+      setSelectedVariantId(prod.variants[0].id);
+    } else {
+      setSelectedVariantId('default');
+    }
   };
 
-  const updateItem = (index, field, value) => {
-    setNewOrder((prev) => {
-      const items = [...prev.items];
-      items[index] = { ...items[index], [field]: value };
-      return { ...prev, items };
-    });
-  };
+  // When admin clicks "+ Tambahkan ke Pesanan"
+  const handleAddSelectedProduct = () => {
+    const prod = (products || []).find((p) => p.id === selectedProdId) || activeProducts[0];
+    if (!prod) {
+      addToast('Pilih produk terlebih dahulu', 'error');
+      return;
+    }
 
-  const changeItemProduct = (index, productId) => {
-    const prod = (products || []).find((p) => p.id === productId);
-    if (!prod) return;
-    const firstVariant = prod.variants?.[0];
-    setNewOrder((prev) => {
-      const items = [...prev.items];
-      items[index] = {
-        ...items[index],
-        productId: prod.id,
-        name: prod.name,
-        emoji: prod.emoji || '📦',
-        size: firstVariant?.size || '',
-        variantId: firstVariant?.id || '',
-        price: firstVariant?.price || 0,
+    let chosenVariant = null;
+    if (prod.variants && prod.variants.length > 0) {
+      chosenVariant = prod.variants.find((v) => v.id === selectedVariantId) || prod.variants[0];
+    } else {
+      chosenVariant = {
+        id: 'default',
+        size: prod.size || 'Reguler',
+        price: prod.price || 0,
       };
-      return { ...prev, items };
+    }
+
+    const itemVariantId = chosenVariant.id || 'default';
+    const itemSize = chosenVariant.size || '';
+    const itemPrice = chosenVariant.price || 0;
+
+    setNewOrder((prev) => {
+      const existingIdx = prev.items.findIndex(
+        (i) => i.productId === prod.id && (i.variantId || 'default') === itemVariantId
+      );
+
+      if (existingIdx > -1) {
+        const updated = [...prev.items];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          qty: updated[existingIdx].qty + selectedQty,
+        };
+        return { ...prev, items: updated };
+      } else {
+        return {
+          ...prev,
+          items: [
+            ...prev.items,
+            {
+              productId: prod.id,
+              name: prod.name,
+              emoji: prod.emoji || '📦',
+              size: itemSize,
+              variantId: itemVariantId,
+              price: itemPrice,
+              qty: selectedQty,
+            },
+          ],
+        };
+      }
     });
+
+    addToast(`+ ${selectedQty}x ${prod.name} ${itemSize ? `(${itemSize})` : ''} berhasil ditambahkan!`, 'success');
+    setSelectedQty(1);
   };
 
-  const changeItemVariant = (index, variantId) => {
-    const item = newOrder.items[index];
-    const prod = (products || []).find((p) => p.id === item.productId);
-    if (!prod) return;
-    const variant = prod.variants?.find((v) => v.id === variantId);
-    if (!variant) return;
+  const updateItemQty = (index, delta) => {
     setNewOrder((prev) => {
       const items = [...prev.items];
-      items[index] = {
-        ...items[index],
-        variantId: variant.id,
-        size: variant.size,
-        price: variant.price,
-      };
+      const newQty = items[index].qty + delta;
+      if (newQty <= 0) {
+        return { ...prev, items: items.filter((_, i) => i !== index) };
+      }
+      items[index] = { ...items[index], qty: newQty };
       return { ...prev, items };
     });
   };
@@ -352,7 +373,6 @@ export default function OrdersManager() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Preview
     const previewUrl = URL.createObjectURL(file);
     setOcrPreview(previewUrl);
     setOcrLoading(true);
@@ -363,10 +383,8 @@ export default function OrdersManager() {
       const text = await runOCR(file);
       setOcrText(text);
 
-      // Parse the text
       const parsed = parseWAText(text, products || []);
 
-      // Auto-fill form
       setNewOrder((prev) => ({
         ...prev,
         customer: parsed.customer || prev.customer,
@@ -378,7 +396,7 @@ export default function OrdersManager() {
       if (parsed.detectedItems.length > 0) {
         addToast(`✅ Berhasil baca ${parsed.detectedItems.length} produk dari screenshot!`, 'success');
       } else {
-        addToast('⚠️ Screenshot terbaca tapi produk tidak terdeteksi. Silakan isi manual.', 'warning');
+        addToast('⚠️ Screenshot terbaca tapi produk tidak terdeteksi. Silakan pilih produk di bawah.', 'warning');
       }
     } catch (err) {
       console.error('OCR error:', err);
@@ -399,7 +417,7 @@ export default function OrdersManager() {
       return;
     }
     if (newOrder.items.length === 0) {
-      addToast('Minimal 1 produk harus dipilih', 'error');
+      addToast('Minimal 1 produk harus dipilih ke dalam pesanan', 'error');
       return;
     }
 
@@ -413,7 +431,7 @@ export default function OrdersManager() {
       address: newOrder.address.trim(),
       notes: newOrder.notes.trim(),
       items: newOrder.items.map((item) => ({
-        id: `${item.productId}-${item.variantId}`,
+        id: `${item.productId}-${item.variantId || 'default'}`,
         productId: item.productId,
         name: item.name,
         size: item.size,
@@ -437,9 +455,14 @@ export default function OrdersManager() {
     resetNewOrderForm();
   };
 
-  // ─── Computed ───
+  // ─── Computed for Picker ───
   const newOrderSubtotal = newOrder.items.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const activeProducts = (products || []).filter((p) => p.active !== false);
+  const currentPickerProd = (products || []).find((p) => p.id === selectedProdId) || activeProducts[0];
+  const currentPickerVariants = currentPickerProd?.variants && currentPickerProd.variants.length > 0
+    ? currentPickerProd.variants
+    : [{ id: 'default', size: currentPickerProd?.size || 'Reguler', price: currentPickerProd?.price || 0 }];
+  const currentPickerVariant = currentPickerVariants.find((v) => v.id === selectedVariantId) || currentPickerVariants[0];
+  const currentUnitSubtotal = (currentPickerVariant?.price || 0) * selectedQty;
 
   return (
     <div>
@@ -775,11 +798,11 @@ export default function OrdersManager() {
             padding: '16px',
             marginBottom: '20px',
           }}>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '0.88rem', color: '#1D4ED8' }}>
-              📸 Scan dari Screenshot Chat WA
+            <h4 style={{ margin: '0 0 8px 0', fontSize: '0.88rem', color: '#1D4ED8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>📸</span> Scan dari Screenshot Chat WA
             </h4>
-            <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0 0 12px 0' }}>
-              Upload screenshot chat WhatsApp, sistem akan otomatis membaca nama, nomor HP, dan pesanan.
+            <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0 0 12px 0', lineHeight: '1.4' }}>
+              Upload screenshot percakapan WhatsApp untuk auto-fill nama, nomor HP, alamat, dan produk secara otomatis.
             </p>
 
             <input
@@ -792,15 +815,17 @@ export default function OrdersManager() {
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button
+                type="button"
                 className={`${styles.btn} ${styles.btnPrimary}`}
                 onClick={() => fileInputRef.current?.click()}
                 disabled={ocrLoading}
                 style={{ fontSize: '0.82rem', background: '#2563EB' }}
               >
-                {ocrLoading ? '⏳ Membaca...' : '📷 Pilih Screenshot'}
+                {ocrLoading ? '⏳ Membaca...' : '📷 Upload Screenshot WA'}
               </button>
               {ocrPreview && (
                 <button
+                  type="button"
                   className={`${styles.btn} ${styles.btnSecondary}`}
                   onClick={() => { setOcrPreview(null); setOcrText(''); }}
                   style={{ fontSize: '0.82rem' }}
@@ -830,7 +855,7 @@ export default function OrdersManager() {
                   animation: 'spin 1s linear infinite',
                 }} />
                 <span style={{ fontSize: '0.82rem', color: '#1E40AF', fontWeight: 600 }}>
-                  Membaca teks dari gambar...
+                  Sedang menganalisis teks dari screenshot...
                 </span>
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </div>
@@ -844,7 +869,7 @@ export default function OrdersManager() {
                   alt="Screenshot preview"
                   style={{
                     maxWidth: '100%',
-                    maxHeight: '150px',
+                    maxHeight: '140px',
                     borderRadius: '8px',
                     border: '1px solid #BFDBFE',
                     objectFit: 'contain',
@@ -877,213 +902,434 @@ export default function OrdersManager() {
             )}
           </div>
 
-          {/* Manual Form */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-            <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-              <label className={styles.formLabel}>Nama Customer *</label>
-              <input
-                className={styles.formInput}
-                value={newOrder.customer}
-                onChange={(e) => setNewOrder((p) => ({ ...p, customer: e.target.value }))}
-                placeholder="Nama lengkap"
-              />
-            </div>
-            <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-              <label className={styles.formLabel}>No. HP / WhatsApp *</label>
-              <input
-                className={styles.formInput}
-                value={newOrder.phone}
-                onChange={(e) => setNewOrder((p) => ({ ...p, phone: e.target.value }))}
-                placeholder="08xxxxxxxxxx"
-              />
-            </div>
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Alamat Pengiriman</label>
-            <textarea
-              className={styles.formInput}
-              value={newOrder.address}
-              onChange={(e) => setNewOrder((p) => ({ ...p, address: e.target.value }))}
-              placeholder="Alamat lengkap pengiriman"
-              rows={2}
-              style={{ resize: 'vertical' }}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Catatan Tambahan</label>
-            <input
-              className={styles.formInput}
-              value={newOrder.notes}
-              onChange={(e) => setNewOrder((p) => ({ ...p, notes: e.target.value }))}
-              placeholder="Misal: jangan pedes, extra es, dll"
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Metode Pembayaran</label>
-            <select
-              className={styles.formInput}
-              value={newOrder.paymentMethod}
-              onChange={(e) => setNewOrder((p) => ({ ...p, paymentMethod: e.target.value }))}
-            >
-              {PAYMENT_METHODS.map((pm) => (
-                <option key={pm.id} value={pm.id}>{pm.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Items Section */}
+          {/* Customer Info Form */}
           <div style={{
-            background: '#F8FAFC',
+            background: '#FFFFFF',
             border: '1px solid var(--border)',
             borderRadius: '10px',
             padding: '16px',
             marginBottom: '16px',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h4 style={{ margin: 0, fontSize: '0.92rem', color: '#0f172a' }}>
-                🛒 Produk Pesanan
-              </h4>
-              <button
-                className={`${styles.btn} ${styles.btnPrimary}`}
-                onClick={addItemToOrder}
-                style={{ fontSize: '0.78rem', padding: '5px 12px' }}
-              >
-                + Tambah Produk
-              </button>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '0.92rem', color: '#0f172a' }}>
+              👤 Data Pemesan
+            </h4>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+              <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                <label className={styles.formLabel}>Nama Customer *</label>
+                <input
+                  className={styles.formInput}
+                  value={newOrder.customer}
+                  onChange={(e) => setNewOrder((p) => ({ ...p, customer: e.target.value }))}
+                  placeholder="Contoh: Budi Santoso"
+                />
+              </div>
+              <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                <label className={styles.formLabel}>No. HP / WhatsApp *</label>
+                <input
+                  className={styles.formInput}
+                  value={newOrder.phone}
+                  onChange={(e) => setNewOrder((p) => ({ ...p, phone: e.target.value }))}
+                  placeholder="Contoh: 081234567890"
+                />
+              </div>
             </div>
 
-            {newOrder.items.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '0.85rem' }}>
-                Belum ada produk. Klik &quot;+ Tambah Produk&quot; atau scan screenshot.
+            <div className={styles.formGroup} style={{ marginBottom: '12px' }}>
+              <label className={styles.formLabel}>Alamat Pengiriman</label>
+              <textarea
+                className={styles.formInput}
+                value={newOrder.address}
+                onChange={(e) => setNewOrder((p) => ({ ...p, address: e.target.value }))}
+                placeholder="Alamat lengkap (nama jalan, nomor rumah, kelurahan/kecamatan, patokan)"
+                rows={2}
+                style={{ resize: 'vertical' }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+              <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                <label className={styles.formLabel}>Metode Pembayaran</label>
+                <select
+                  className={styles.formInput}
+                  value={newOrder.paymentMethod}
+                  onChange={(e) => setNewOrder((p) => ({ ...p, paymentMethod: e.target.value }))}
+                >
+                  {PAYMENT_METHODS.map((pm) => (
+                    <option key={pm.id} value={pm.id}>{pm.name}</option>
+                  ))}
+                </select>
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {newOrder.items.map((item, idx) => {
-                  const prod = (products || []).find((p) => p.id === item.productId);
+              <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                <label className={styles.formLabel}>Catatan Tambahan</label>
+                <input
+                  className={styles.formInput}
+                  value={newOrder.notes}
+                  onChange={(e) => setNewOrder((p) => ({ ...p, notes: e.target.value }))}
+                  placeholder="Contoh: kuah dipisah, pedes sedang"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ INTERACTIVE PRODUCT PICKER SECTION ═══ */}
+          <div style={{
+            background: '#F0FDF4',
+            border: '1.5px solid #86EFAC',
+            borderRadius: '10px',
+            padding: '16px',
+            marginBottom: '16px',
+          }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '0.94rem', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>🛍️</span> Pilih Produk yang Mau Dipesan
+            </h4>
+
+            {/* 1. Product Cards Selector */}
+            <div style={{ marginBottom: '12px' }}>
+              <label className={styles.formLabel} style={{ color: '#166534', fontWeight: 700 }}>
+                1. Pilih Menu Produk:
+              </label>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                gap: '8px',
+              }}>
+                {activeProducts.map((prod) => {
+                  const isSelected = (selectedProdId || activeProducts[0]?.id) === prod.id;
                   return (
-                    <div
-                      key={idx}
+                    <button
+                      key={prod.id}
+                      type="button"
+                      onClick={() => handleSelectProduct(prod.id)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
                         padding: '10px 12px',
-                        background: '#ffffff',
                         borderRadius: '8px',
-                        border: '1px solid var(--border)',
-                        flexWrap: 'wrap',
+                        border: isSelected ? '2px solid #059669' : '1px solid #CBD5E1',
+                        background: isSelected ? '#DCFCE7' : '#FFFFFF',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s ease',
+                        boxShadow: isSelected ? '0 2px 4px rgba(5, 150, 105, 0.15)' : 'none',
                       }}
                     >
-                      <span style={{ fontSize: '1.2rem' }}>{item.emoji}</span>
-
-                      {/* Product select */}
-                      <select
-                        className={styles.formInput}
-                        value={item.productId}
-                        onChange={(e) => changeItemProduct(idx, e.target.value)}
-                        style={{ flex: '1 1 120px', minWidth: '120px', fontSize: '0.8rem', padding: '6px 8px' }}
-                      >
-                        {activeProducts.map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </select>
-
-                      {/* Variant select */}
-                      {prod?.variants && prod.variants.length > 1 && (
-                        <select
-                          className={styles.formInput}
-                          value={item.variantId}
-                          onChange={(e) => changeItemVariant(idx, e.target.value)}
-                          style={{ flex: '0 1 130px', fontSize: '0.8rem', padding: '6px 8px' }}
-                        >
-                          {prod.variants.map((v) => (
-                            <option key={v.id} value={v.id}>{v.size} — {formatCurrency(v.price)}</option>
-                          ))}
-                        </select>
-                      )}
-
-                      {/* Qty */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <button
-                          onClick={() => updateItem(idx, 'qty', Math.max(1, item.qty - 1))}
-                          style={{
-                            width: '28px', height: '28px', borderRadius: '6px',
-                            background: '#f1f5f9', border: '1px solid var(--border)',
-                            fontSize: '1rem', cursor: 'pointer', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center',
-                          }}
-                        >−</button>
-                        <span style={{ fontWeight: 700, fontSize: '0.88rem', minWidth: '24px', textAlign: 'center' }}>
-                          {item.qty}
-                        </span>
-                        <button
-                          onClick={() => updateItem(idx, 'qty', item.qty + 1)}
-                          style={{
-                            width: '28px', height: '28px', borderRadius: '6px',
-                            background: '#f1f5f9', border: '1px solid var(--border)',
-                            fontSize: '1rem', cursor: 'pointer', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center',
-                          }}
-                        >+</button>
+                      <span style={{ fontSize: '1.4rem' }}>{prod.emoji || '📦'}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontWeight: isSelected ? 800 : 600,
+                          fontSize: '0.82rem',
+                          color: isSelected ? '#065F46' : '#0F172A',
+                          lineHeight: '1.2',
+                          marginBottom: '2px',
+                        }}>
+                          {prod.name}
+                        </div>
+                        {prod.badge && (
+                          <span style={{
+                            fontSize: '0.65rem',
+                            background: isSelected ? '#059669' : '#E2E8F0',
+                            color: isSelected ? '#FFFFFF' : '#475569',
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            fontWeight: 700,
+                          }}>
+                            {prod.badge}
+                          </span>
+                        )}
                       </div>
-
-                      {/* Price */}
-                      <span style={{ fontWeight: 700, fontSize: '0.82rem', color: '#059669', minWidth: '70px', textAlign: 'right' }}>
-                        {formatCurrency(item.price * item.qty)}
-                      </span>
-
-                      {/* Remove */}
-                      <button
-                        onClick={() => removeItem(idx)}
-                        style={{
-                          width: '28px', height: '28px', borderRadius: '6px',
-                          background: '#FEE2E2', border: '1px solid #FECACA',
-                          color: '#DC2626', fontSize: '0.82rem', cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}
-                      >✕</button>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
-            )}
+            </div>
 
-            {/* Subtotal */}
-            {newOrder.items.length > 0 && (
-              <div style={{
-                marginTop: '12px',
-                paddingTop: '12px',
-                borderTop: '1px solid var(--border)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}>
-                <span style={{ fontWeight: 700, fontSize: '0.92rem' }}>Total</span>
-                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#059669' }}>
-                  {formatCurrency(newOrderSubtotal)}
+            {/* 2. Variant / Size Selector (if multiple variants) */}
+            <div style={{ marginBottom: '14px' }}>
+              <label className={styles.formLabel} style={{ color: '#166534', fontWeight: 700 }}>
+                2. Pilih Ukuran / Porsi:
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {currentPickerVariants.map((v) => {
+                  const isSelected = (selectedVariantId || currentPickerVariants[0]?.id) === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setSelectedVariantId(v.id)}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: isSelected ? 700 : 500,
+                        border: isSelected ? '2px solid #059669' : '1px solid #CBD5E1',
+                        background: isSelected ? '#059669' : '#FFFFFF',
+                        color: isSelected ? '#FFFFFF' : '#334155',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <span>{v.size}</span>
+                      <span style={{
+                        fontWeight: 800,
+                        color: isSelected ? '#FFFFFF' : '#059669',
+                        fontSize: '0.82rem',
+                      }}>
+                        {formatCurrency(v.price)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Quantity & Add Button */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              paddingTop: '12px',
+              borderTop: '1px dashed #A7F3D0',
+              flexWrap: 'wrap',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
+                  Jumlah:
                 </span>
+                <div style={{ display: 'flex', alignItems: 'center', background: '#FFFFFF', borderRadius: '8px', border: '1.5px solid #CBD5E1', overflow: 'hidden' }}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedQty(Math.max(1, selectedQty - 1))}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      background: '#F8FAFC',
+                      border: 'none',
+                      fontSize: '1.1rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      color: '#475569',
+                    }}
+                  >
+                    −
+                  </button>
+                  <span style={{ minWidth: '36px', textAlign: 'center', fontWeight: 800, fontSize: '0.92rem', color: '#0F172A' }}>
+                    {selectedQty}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedQty(selectedQty + 1)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      background: '#F8FAFC',
+                      border: 'none',
+                      fontSize: '1.1rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      color: '#475569',
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                onClick={handleAddSelectedProduct}
+                style={{
+                  padding: '9px 18px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+                }}
+              >
+                ➕ Tambah ke Pesanan ({formatCurrency(currentUnitSubtotal)})
+              </button>
+            </div>
+          </div>
+
+          {/* ═══ LIST OF ORDERED ITEMS ═══ */}
+          <div style={{
+            background: '#F8FAFC',
+            border: '1px solid var(--border)',
+            borderRadius: '10px',
+            padding: '16px',
+            marginBottom: '20px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h4 style={{ margin: 0, fontSize: '0.92rem', color: '#0f172a' }}>
+                🛒 Rincian Item Pesanan ({newOrder.items.length})
+              </h4>
+            </div>
+
+            {newOrder.items.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '24px 16px',
+                background: '#FFFFFF',
+                borderRadius: '8px',
+                border: '1px dashed #CBD5E1',
+                color: '#94a3b8',
+                fontSize: '0.85rem',
+              }}>
+                <div style={{ fontSize: '1.8rem', marginBottom: '6px' }}>🧺</div>
+                <div>Belum ada produk yang ditambahkan ke pesanan.</div>
+                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: '#64748b' }}>
+                  Pilih produk & ukuran di atas, lalu klik <strong>&quot;+ Tambah ke Pesanan&quot;</strong>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {newOrder.items.map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      background: '#ffffff',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.3rem' }}>{item.emoji || '📦'}</span>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.84rem', color: '#0F172A' }}>
+                        {item.name}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: '#64748B' }}>
+                        {item.size ? `${item.size} • ` : ''}{formatCurrency(item.price)}/item
+                      </div>
+                    </div>
+
+                    {/* Stepper Qty */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: '#F1F5F9', borderRadius: '6px', padding: '2px' }}>
+                      <button
+                        type="button"
+                        onClick={() => updateItemQty(idx, -1)}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '4px',
+                          background: '#FFFFFF',
+                          border: '1px solid #CBD5E1',
+                          fontSize: '0.9rem',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        −
+                      </button>
+                      <span style={{ fontWeight: 800, fontSize: '0.84rem', minWidth: '28px', textAlign: 'center' }}>
+                        {item.qty}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => updateItemQty(idx, 1)}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '4px',
+                          background: '#FFFFFF',
+                          border: '1px solid #CBD5E1',
+                          fontSize: '0.9rem',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Total Price */}
+                    <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#059669', minWidth: '85px', textAlign: 'right' }}>
+                      {formatCurrency(item.price * item.qty)}
+                    </div>
+
+                    {/* Delete Item */}
+                    <button
+                      type="button"
+                      onClick={() => removeItem(idx)}
+                      title="Hapus produk ini"
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        background: '#FEE2E2',
+                        border: '1px solid #FECACA',
+                        color: '#DC2626',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+
+                {/* Subtotal Calculation */}
+                <div style={{
+                  marginTop: '8px',
+                  paddingTop: '12px',
+                  borderTop: '1px solid var(--border)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#334155' }}>
+                    Total Pembayaran:
+                  </span>
+                  <span style={{ fontWeight: 800, fontSize: '1.25rem', color: '#059669' }}>
+                    {formatCurrency(newOrderSubtotal)}
+                  </span>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Submit */}
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          {/* Modal Footer Actions */}
+          <div style={{
+            display: 'flex',
+            gap: '10px',
+            justifyContent: 'flex-end',
+            paddingTop: '12px',
+            borderTop: '1px solid var(--border)',
+          }}>
             <button
+              type="button"
               className={`${styles.btn} ${styles.btnSecondary}`}
               onClick={() => setIsNewOrderOpen(false)}
             >
               Batal
             </button>
             <button
+              type="button"
               className={`${styles.btn} ${styles.btnPrimary}`}
               onClick={handleSubmitNewOrder}
-              disabled={ocrLoading}
+              disabled={ocrLoading || newOrder.items.length === 0}
               style={{ fontSize: '0.88rem', padding: '10px 24px' }}
             >
-              💾 Simpan Order
+              💾 Simpan & Buat Order
             </button>
           </div>
         </div>
