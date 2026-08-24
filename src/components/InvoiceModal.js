@@ -51,8 +51,17 @@ export default function InvoiceModal({ order, onClose, onOpenWa, storeSettings }
         item.price * item.qty
       )}\n`;
     });
-    text += `\nSubtotal: ${formatCurrency(subtotal)}\n`;
-    text += `Ongkir: ${shippingCost === 0 ? 'GRATIS' : formatCurrency(shippingCost)}\n`;
+    const isPickup =
+      shippingName?.toLowerCase().includes('pickup') ||
+      shippingName?.toLowerCase().includes('ambil');
+
+    let shippingText = 'Ongkir akan disesuaikan dengan alamat, silahkan tanya admin';
+    if (shippingCost > 0) {
+      shippingText = formatCurrency(shippingCost);
+    } else if (isPickup) {
+      shippingText = 'Ambil Sendiri di Toko';
+    }
+    text += `Ongkir: ${shippingText}\n`;
     if (discount > 0) text += `Diskon: -${formatCurrency(discount)}\n`;
     text += `*TOTAL BAYAR: ${formatCurrency(total)}*\n`;
 
@@ -154,7 +163,11 @@ export default function InvoiceModal({ order, onClose, onOpenWa, storeSettings }
               <div className={styles.calcLine}>
                 <span>Ongkir ({shippingName || 'Kurir'})</span>
                 <span>
-                  {shippingCost === 0 ? 'GRATIS' : formatCurrency(shippingCost)}
+                  {shippingCost > 0
+                    ? formatCurrency(shippingCost)
+                    : (shippingName?.toLowerCase().includes('pickup') || shippingName?.toLowerCase().includes('ambil'))
+                    ? 'Ambil di Toko'
+                    : 'Disesuaikan Alamat'}
                 </span>
               </div>
               {discount > 0 && (

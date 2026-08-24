@@ -19,10 +19,17 @@ export function generateWhatsAppMessage({ orderId, cartItems, formData, subtotal
   msg += `\n━━━━━━━━━━━━━━━━━━━━━\n`;
   msg += ` Subtotal: ${formatCurrency(subtotal)}\n`;
   
+  const isPickup =
+    shippingMethod?.id === 'pickup' ||
+    shippingMethod?.name?.toLowerCase().includes('pickup') ||
+    shippingMethod?.name?.toLowerCase().includes('ambil');
+
   if (shippingCost > 0) {
     msg += `🚚 Ongkir (${shippingMethod?.name || 'Kurir'}): ${formatCurrency(shippingCost)}\n`;
+  } else if (isPickup) {
+    msg += `🚚 Pengiriman (${shippingMethod?.name || 'Pick Up'}): *Ambil Sendiri di Toko*\n`;
   } else {
-    msg += `🚚 Ongkir (${shippingMethod?.name || 'Pickup'}): *GRATIS*\n`;
+    msg += `🚚 Ongkir (${shippingMethod?.name || 'Kurir'}): *Ongkir akan disesuaikan dengan alamat, silahkan tanya admin*\n`;
   }
 
   if (discount > 0) {
