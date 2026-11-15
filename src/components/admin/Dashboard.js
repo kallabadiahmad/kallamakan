@@ -121,6 +121,7 @@ export default function Dashboard({ orders, expenses }) {
       totalOrderCount: all.orderCount,
       totalRecapDays: all.recapDays,
       totalRecapRevenue: all.recapRevenue,
+      totalCovered: all.coveredByRecap,
       adsExpense: all.adsExpense,
       totalExpenses: all.totalExpenses,
       netProfit: all.netProfit,
@@ -135,6 +136,7 @@ export default function Dashboard({ orders, expenses }) {
       todayOrderCount: todaySum.orderCount,
       todayRecapDays: todaySum.recapDays,
       todayRecapRevenue: todaySum.recapRevenue,
+      todayCovered: todaySum.coveredByRecap,
       todayExpenses: todaySum.totalExpenses,
       todayAdsExpense: todaySum.adsExpense,
       todayNetProfit: todaySum.netProfit,
@@ -168,6 +170,7 @@ export default function Dashboard({ orders, expenses }) {
   const displayPending = isToday ? stats.todayPending : stats.totalPending;
   const displayRecapDays = isToday ? stats.todayRecapDays : stats.totalRecapDays;
   const displayRecapRevenue = isToday ? stats.todayRecapRevenue : stats.totalRecapRevenue;
+  const displayCovered = isToday ? stats.todayCovered : stats.totalCovered;
   const displayDiscount = isToday ? stats.todayDiscount : stats.totalDiscount;
   const displayAds = isToday ? stats.todayAdsExpense : stats.adsExpense;
   const displayRoas = isToday ? stats.todayRoas : stats.roas;
@@ -282,6 +285,7 @@ export default function Dashboard({ orders, expenses }) {
             {displayRecapDays > 0 && (
               <div style={{ ...metricSubStyle, marginTop: '2px' }}>
                 📒 termasuk {formatCurrency(displayRecapRevenue)} dari rekap catatan harian ({displayRecapDays} hari)
+                {displayCovered > 0 ? ` • ${displayCovered} pesanan web di hari yang sama tidak dihitung dobel` : ''}
               </div>
             )}
             {displayPending > 0 && (

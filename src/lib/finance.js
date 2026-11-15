@@ -5,7 +5,9 @@
                   (ongkir TIDAK dihitung karena dibayar ke kurir)
    Pesanan yang dihitung = semua kecuali status "Dibatalkan"
    Rekap harian (source: 'rekap') = pendapatan sehari dari catatan; masuk omzet,
-                  tapi tidak dihitung sebagai jumlah pesanan / AOV / HPP
+                  tapi tidak dihitung sebagai jumlah pesanan / AOV / HPP.
+                  Kalau suatu tanggal punya rekap, angka rekap = omzet hari itu;
+                  pesanan web di tanggal yang sama tidak ditambahkan lagi (supaya tidak dobel).
    Profit Bersih = Omzet − Total Pengeluaran yang dicatat
                   (bahan baku, iklan, packaging, operasional, lain-lain)
    Estimasi HPP  = modal per porsi × jumlah terjual (hanya perkiraan,
@@ -110,7 +112,14 @@ export function inPeriod(dateValue, period) {
 
 /** Ringkasan keuangan untuk sekumpulan pesanan & pengeluaran yang sudah difilter */
 export function summarize(orders = [], expenses = [], products = []) {
-  const counted = (orders || []).filter(isCountedOrder);
+  const allCounted = (orders || []).filter(isCountedOrder);
+  const recapDates = new Set(allCounted.filter(isRecapOrder).map((o) => toDateKey(o.date)));
+  let coveredByRecap = 0;
+  const counted = allCounted.filter((o) => {
+    if (isRecapOrder(o) || !recapDates.has(toDateKey(o.date))) return true;
+    coveredByRecap += 1;
+    return false;
+  });
 
   let revenue = 0;
   let grossSales = 0;
@@ -161,6 +170,7 @@ export function summarize(orders = [], expenses = [], products = []) {
     revenue,
     recapRevenue,
     recapDays,
+    coveredByRecap, // pesanan web yang sudah tercakup di rekap harian
     orderRevenue: orderRevenueOnly,
     pendingRevenue,
     confirmedRevenue: revenue - pendingRevenue,

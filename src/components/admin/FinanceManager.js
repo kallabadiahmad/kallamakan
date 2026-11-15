@@ -211,6 +211,7 @@ export default function FinanceManager() {
             {metrics.recapDays > 0 && (
               <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '2px' }}>
                 📒 + rekap harian {metrics.recapDays} hari ({formatCurrency(metrics.recapRevenue)})
+                {metrics.coveredByRecap > 0 ? ` • ${metrics.coveredByRecap} pesanan web sudah termasuk di rekap` : ''}
               </div>
             )}
             {metrics.pendingRevenue > 0 && (
