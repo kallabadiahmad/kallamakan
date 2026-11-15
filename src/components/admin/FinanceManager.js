@@ -3,13 +3,15 @@
 import React, { useState, useMemo } from 'react';
 import styles from '../../app/admin/admin.module.css';
 import Modal from './Modal';
+import QuickExpenseInput from './QuickExpenseInput';
 import { formatCurrency, formatDate, generateId } from '../../lib/utils';
 import { EXPENSE_CATEGORIES } from '../../lib/constants';
+import { summarize, isCountedOrder, inPeriod, orderRevenue, todayKey } from '../../lib/finance';
 import { useToast } from '../../hooks/useToast';
 import { useCart } from '../../context/CartContext';
 
 export default function FinanceManager() {
-  const { orders, expenses, saveExpense, deleteExpense: removeExpense } = useCart();
+  const { orders, expenses, products, saveExpense, deleteExpense: removeExpense } = useCart();
   const [period, setPeriod] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -17,32 +19,21 @@ export default function FinanceManager() {
   const { addToast } = useToast();
 
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: todayKey(),
     category: 'ads_ctwa',
     desc: '',
     amount: '',
   });
 
-  // ─── Period filter ───
-  const filterDataByPeriod = (data, dateField) => {
-    const now = new Date();
-    return (data || []).filter((item) => {
-      if (!item || !item[dateField]) return false;
-      const d = new Date(item[dateField]);
-      if (period === 'today') return d.toDateString() === now.toDateString();
-      if (period === 'week') {
-        const pastWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-        return d >= pastWeek;
-      }
-      if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      if (period === 'year') return d.getFullYear() === now.getFullYear();
-      return true; // all
-    });
-  };
-
-  const validOrders = (orders || []).filter((o) => o.status !== 'cancelled');
-  const filteredOrders = filterDataByPeriod(validOrders, 'date');
-  const filteredExpenses = filterDataByPeriod(expenses || [], 'date');
+  // ─── Period filter (pakai tanggal lokal, bukan UTC) ───
+  const filteredOrders = useMemo(
+    () => (orders || []).filter((o) => isCountedOrder(o) && inPeriod(o.date, period)),
+    [orders, period]
+  );
+  const filteredExpenses = useMemo(
+    () => (expenses || []).filter((e) => e && inPeriod(e.date, period)),
+    [expenses, period]
+  );
 
   // Search filter on expenses
   const searchedExpenses = filteredExpenses.filter((e) => {
@@ -53,62 +44,25 @@ export default function FinanceManager() {
     return catLabel.includes(q) || desc.includes(q);
   });
 
-  // ─── Revenue & P&L Metrics ───
+  // ─── Revenue & P&L Metrics (rumus di src/lib/finance.js) ───
   const metrics = useMemo(() => {
-    const totalRevenue = filteredOrders.reduce((sum, o) => sum + (o.subtotal || o.total || 0), 0);
-    const totalHPP = filteredOrders.reduce((sum, o) => {
-      if (o.totalHPP && o.totalHPP > 0) return sum + o.totalHPP;
-      if (Array.isArray(o.items)) {
-        const itemsHPP = o.items.reduce((s, item) => s + ((item.hpp || 0) * (item.qty || 1)), 0);
-        if (itemsHPP > 0) return sum + itemsHPP;
-      }
-      return sum + Math.round((o.subtotal || o.total || 0) * 0.5);
-    }, 0);
-    const grossProfit = Math.max(0, totalRevenue - totalHPP);
-
-    const expenseByCategory = {};
+    const m = summarize(filteredOrders, filteredExpenses, products);
     Object.keys(EXPENSE_CATEGORIES).forEach((key) => {
-      expenseByCategory[key] = 0;
+      if (m.expenseByCategory[key] === undefined) m.expenseByCategory[key] = 0;
     });
-    filteredExpenses.forEach((e) => {
-      const cat = e.category || 'lainnya';
-      expenseByCategory[cat] = (expenseByCategory[cat] || 0) + Number(e.amount || 0);
-    });
-
-    const adsExpense = expenseByCategory['ads_ctwa'] || 0;
-    const totalExpenses = Object.values(expenseByCategory).reduce((s, v) => s + v, 0);
-    const operationalExpense = totalExpenses - adsExpense;
-
-    const netProfit = grossProfit - totalExpenses;
-    const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0.0';
-
-    const orderCount = filteredOrders.length;
-    const aov = orderCount > 0 ? Math.round(totalRevenue / orderCount) : 0;
-    const avgProfitPerOrder = orderCount > 0 ? Math.round(netProfit / orderCount) : 0;
-    const roas = adsExpense > 0 ? (totalRevenue / adsExpense).toFixed(2) : '∞';
-
     return {
-      totalRevenue,
-      totalHPP,
-      grossProfit,
-      adsExpense,
-      operationalExpense,
-      totalExpenses,
-      netProfit,
-      profitMargin,
-      orderCount,
-      aov,
-      avgProfitPerOrder,
-      roas,
-      expenseByCategory,
+      ...m,
+      totalRevenue: m.revenue,
+      totalHPP: m.hpp,
+      profitMargin: m.margin,
     };
-  }, [filteredOrders, filteredExpenses]);
+  }, [filteredOrders, filteredExpenses, products]);
 
   // ─── Expense CRUD ───
   const openAddModal = () => {
     setEditingExpense(null);
     setFormData({
-      date: new Date().toISOString().split('T')[0],
+      date: todayKey(),
       category: 'ads_ctwa',
       desc: '',
       amount: '',
@@ -119,7 +73,7 @@ export default function FinanceManager() {
   const openEditModal = (expense) => {
     setEditingExpense(expense);
     setFormData({
-      date: expense.date || new Date().toISOString().split('T')[0],
+      date: expense.date || todayKey(),
       category: expense.category || 'ads_ctwa',
       desc: expense.desc || '',
       amount: String(expense.amount || ''),
@@ -143,7 +97,9 @@ export default function FinanceManager() {
       amount: parseInt(formData.amount, 10),
     };
 
-    saveExpense(expensePayload);
+    saveExpense(expensePayload).then((res) => {
+      if (res && !res.success) addToast(`Gagal menyimpan: ${res.error}`, 'error');
+    });
     if (editingExpense) {
       addToast('Pengeluaran berhasil diperbarui', 'success');
     } else {
@@ -152,7 +108,7 @@ export default function FinanceManager() {
 
     setIsModalOpen(false);
     setEditingExpense(null);
-    setFormData({ date: new Date().toISOString().split('T')[0], category: 'ads_ctwa', desc: '', amount: '' });
+    setFormData({ date: todayKey(), category: 'ads_ctwa', desc: '', amount: '' });
   };
 
   const handleDeleteExpense = (id) => {
@@ -166,20 +122,23 @@ export default function FinanceManager() {
   const exportCSV = () => {
     let csv = 'Tanggal,Tipe,Kategori/Customer,Jumlah (Rp),Keterangan\n';
     filteredOrders.forEach((o) => {
-      csv += `${formatDate(o.date)},Pemasukan Order,${o.customer},${o.total || o.subtotal},"${o.id} - ${o.paymentMethod}"\n`;
+      csv += `${formatDate(o.date)},Pemasukan Order,"${(o.customer || '').replace(/"/g, "'")}",${orderRevenue(o)},"${o.id} - ${o.paymentMethod} - ${o.status}"\n`;
     });
     filteredExpenses.forEach((e) => {
       csv += `${formatDate(e.date)},Pengeluaran,${EXPENSE_CATEGORIES[e.category] || e.category},-${e.amount},"${e.desc || ''}"\n`;
     });
 
     csv += `\nLAPORAN LABA RUGI\n`;
-    csv += `Omzet Penjualan,,${metrics.totalRevenue}\n`;
-    csv += `HPP / Modal Buah,,${metrics.totalHPP}\n`;
-    csv += `Laba Kotor,,${metrics.grossProfit}\n`;
-    csv += `Total Pengeluaran,,${metrics.totalExpenses}\n`;
-    csv += `Laba Bersih,,${metrics.netProfit}\n`;
+    csv += `Penjualan Kotor (sebelum diskon),,${metrics.grossSales}\n`;
+    csv += `Diskon Voucher,,-${metrics.discount}\n`;
+    csv += `Omzet Penjualan (tanpa ongkir),,${metrics.totalRevenue}\n`;
+    csv += `Total Pengeluaran,,-${metrics.totalExpenses}\n`;
+    csv += `Laba Bersih (Omzet - Pengeluaran),,${metrics.netProfit}\n`;
+    csv += `Estimasi HPP (modal per porsi),,${metrics.totalHPP}\n`;
+    csv += `Estimasi Laba Kotor (Omzet - HPP),,${metrics.grossProfit}\n`;
     csv += `Profit Margin,,${metrics.profitMargin}%\n`;
     csv += `ROAS,,${metrics.roas}x\n`;
+    csv += `Biaya Iklan per Pesanan,,${metrics.cpa}\n`;
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -230,6 +189,9 @@ export default function FinanceManager() {
         </div>
       </div>
 
+      {/* ═══ CATAT PENGELUARAN CEPAT (ketik bebas) ═══ */}
+      <QuickExpenseInput />
+
       {/* ═══ FINANCIAL SUMMARY CARDS ═══ */}
       <div
         style={{
@@ -246,15 +208,20 @@ export default function FinanceManager() {
             <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '3px' }}>
               {metrics.orderCount} pesanan • AOV {formatCurrency(metrics.aov)}
             </div>
+            {metrics.pendingRevenue > 0 && (
+              <div style={{ fontSize: '0.72rem', color: '#D97706', marginTop: '2px' }}>
+                ⏳ {formatCurrency(metrics.pendingRevenue)} menunggu konfirmasi
+              </div>
+            )}
           </div>
         </div>
 
         <div className={styles.card} style={{ marginBottom: 0 }}>
           <div className={styles.cardBody} style={{ padding: '16px' }}>
-            <div style={{ color: '#64748B', fontSize: '0.78rem', marginBottom: '4px' }}>📦 HPP / Modal Buah</div>
+            <div style={{ color: '#64748B', fontSize: '0.78rem', marginBottom: '4px' }}>📦 Estimasi Modal (HPP)</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#64748B' }}>{formatCurrency(metrics.totalHPP)}</div>
             <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '3px' }}>
-              Laba Kotor: {formatCurrency(metrics.grossProfit)}
+              Est. laba kotor: {formatCurrency(metrics.grossProfit)} • {metrics.itemsSold} porsi
             </div>
           </div>
         </div>
@@ -273,10 +240,10 @@ export default function FinanceManager() {
           <div className={styles.cardBody} style={{ padding: '16px' }}>
             <div style={{ color: '#64748B', fontSize: '0.78rem', marginBottom: '4px' }}>💰 Laba Bersih</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 800, color: metrics.netProfit >= 0 ? '#16A34A' : '#DC2626' }}>
-              {formatCurrency(metrics.netProfit)}
+              {metrics.netProfit < 0 ? '-' : ''}{formatCurrency(metrics.netProfit)}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#059669', marginTop: '3px', fontWeight: 700 }}>
-              Margin: {metrics.profitMargin}%
+              Omzet − Pengeluaran • Margin {metrics.profitMargin}%
             </div>
           </div>
         </div>
@@ -286,7 +253,7 @@ export default function FinanceManager() {
             <div style={{ color: '#64748B', fontSize: '0.78rem', marginBottom: '4px' }}>🎯 ROAS (Iklan CTWA)</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#3B82F6' }}>{metrics.roas}x</div>
             <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '3px' }}>
-              Revenue / Biaya Iklan
+              Omzet ÷ Biaya Iklan{metrics.cpa > 0 ? ` • ${formatCurrency(metrics.cpa)}/pesanan` : ''}
             </div>
           </div>
         </div>
@@ -295,7 +262,7 @@ export default function FinanceManager() {
           <div className={styles.cardBody} style={{ padding: '16px' }}>
             <div style={{ color: '#64748B', fontSize: '0.78rem', marginBottom: '4px' }}>📊 Avg Profit/Order</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 800, color: metrics.avgProfitPerOrder >= 0 ? '#059669' : '#DC2626' }}>
-              {formatCurrency(metrics.avgProfitPerOrder)}
+              {metrics.avgProfitPerOrder < 0 ? '-' : ''}{formatCurrency(metrics.avgProfitPerOrder)}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '3px' }}>
               per pesanan setelah biaya
@@ -316,37 +283,33 @@ export default function FinanceManager() {
           <table className={styles.dataTable} style={{ whiteSpace: 'normal' }}>
             <tbody>
               <tr>
-                <td style={{ fontWeight: 700, color: '#0F172A', paddingLeft: '20px' }}>📈 Pendapatan / Omzet Penjualan</td>
-                <td style={{ textAlign: 'right', fontWeight: 700, color: '#16A34A', paddingRight: '20px' }}>
+                <td style={{ color: '#64748B', paddingLeft: '20px' }}>Penjualan produk (sebelum diskon)</td>
+                <td style={{ textAlign: 'right', color: '#334155', paddingRight: '20px' }}>
+                  {formatCurrency(metrics.grossSales)}
+                </td>
+              </tr>
+              {metrics.discount > 0 && (
+                <tr>
+                  <td style={{ color: '#64748B', paddingLeft: '36px' }}>(-) Diskon Voucher</td>
+                  <td style={{ textAlign: 'right', color: '#DC2626', paddingRight: '20px' }}>
+                    ({formatCurrency(metrics.discount)})
+                  </td>
+                </tr>
+              )}
+              <tr style={{ background: '#F0FDF4' }}>
+                <td style={{ fontWeight: 800, color: '#059669', paddingLeft: '20px', borderTop: '2px solid #BBF7D0' }}>
+                  📈 = Omzet Penjualan (tanpa ongkir)
+                </td>
+                <td style={{ textAlign: 'right', fontWeight: 800, color: '#059669', paddingRight: '20px', borderTop: '2px solid #BBF7D0' }}>
                   {formatCurrency(metrics.totalRevenue)}
                 </td>
               </tr>
-              <tr>
-                <td style={{ color: '#64748B', paddingLeft: '36px' }}>(-) HPP / Modal Bahan Buah</td>
-                <td style={{ textAlign: 'right', color: '#DC2626', paddingRight: '20px' }}>
-                  ({formatCurrency(metrics.totalHPP)})
-                </td>
-              </tr>
-              <tr style={{ background: '#F0FDF4' }}>
-                <td style={{ fontWeight: 800, color: '#059669', paddingLeft: '20px', borderTop: '2px solid #BBF7D0' }}>
-                  = Laba Kotor (Gross Profit)
-                </td>
-                <td style={{ textAlign: 'right', fontWeight: 800, color: '#059669', paddingRight: '20px', borderTop: '2px solid #BBF7D0' }}>
-                  {formatCurrency(metrics.grossProfit)}
-                </td>
-              </tr>
-              <tr>
-                <td style={{ color: '#64748B', paddingLeft: '36px' }}>(-) Biaya Iklan CTWA (Meta/TikTok)</td>
-                <td style={{ textAlign: 'right', color: '#DC2626', paddingRight: '20px' }}>
-                  ({formatCurrency(metrics.adsExpense)})
-                </td>
-              </tr>
-              {Object.entries(EXPENSE_CATEGORIES).filter(([key]) => key !== 'ads_ctwa').map(([key, label]) => (
+              {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => (
                 <tr key={key}>
-                  <td style={{ color: '#94A3B8', paddingLeft: '52px', fontSize: '0.85rem' }}>
+                  <td style={{ color: '#64748B', paddingLeft: '36px', fontSize: '0.88rem' }}>
                     (-) {label}
                   </td>
-                  <td style={{ textAlign: 'right', color: '#94A3B8', paddingRight: '20px', fontSize: '0.85rem' }}>
+                  <td style={{ textAlign: 'right', color: '#DC2626', paddingRight: '20px', fontSize: '0.88rem' }}>
                     ({formatCurrency(metrics.expenseByCategory[key] || 0)})
                   </td>
                 </tr>
@@ -356,8 +319,15 @@ export default function FinanceManager() {
                   💰 LABA BERSIH (Net Profit)
                 </td>
                 <td style={{ textAlign: 'right', fontWeight: 800, fontSize: '1.05rem', color: metrics.netProfit >= 0 ? '#16A34A' : '#DC2626', paddingRight: '20px', borderTop: '3px double #CBD5E1' }}>
-                  {formatCurrency(metrics.netProfit)}
+                  {metrics.netProfit < 0 ? '-' : ''}{formatCurrency(metrics.netProfit)}
                 </td>
+              </tr>
+              <tr>
+                <td style={{ color: '#94A3B8', paddingLeft: '20px', fontSize: '0.8rem' }}>
+                  Info: estimasi modal per porsi {formatCurrency(metrics.totalHPP)} → estimasi laba kotor {formatCurrency(metrics.grossProfit)}
+                  <br />(tidak dikurangkan lagi, karena belanja buah sudah dicatat di pengeluaran Bahan Baku)
+                </td>
+                <td />
               </tr>
               <tr>
                 <td style={{ color: '#64748B', paddingLeft: '20px', fontSize: '0.82rem' }}>Profit Margin</td>
@@ -459,7 +429,7 @@ export default function FinanceManager() {
                           </div>
                         </td>
                         <td style={{ color: '#16A34A', fontWeight: 700 }}>
-                          +{formatCurrency(o.total || o.subtotal || 0)}
+                          +{formatCurrency(orderRevenue(o))}
                         </td>
                       </tr>
                     ))

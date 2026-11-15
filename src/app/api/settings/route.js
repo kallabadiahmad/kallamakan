@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
+import { requireAdmin } from '@/lib/apiAuth';
 import Settings from '@/models/Settings';
 import { DEFAULT_SETTINGS } from '@/lib/constants';
 
@@ -21,13 +22,17 @@ export async function GET() {
 
 export async function PUT(req) {
   try {
+    const authError = await requireAdmin(req);
+    if (authError) return authError;
     await connectDB();
     const body = await req.json();
+    // Field internal: jangan ditimpa dari form pengaturan
+    const { _id, __v, createdAt, updatedAt, seededProductIds, key, ...rest } = body || {};
 
     const updatedSettings = await Settings.findOneAndUpdate(
       { key: 'store_settings' },
-      { ...body },
-      { new: true, upsert: true }
+      { $set: rest },
+      { returnDocument: 'after', upsert: true }
     );
 
     return NextResponse.json({ success: true, settings: updatedSettings });

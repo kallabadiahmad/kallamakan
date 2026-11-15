@@ -73,7 +73,11 @@ function parseWAText(rawText, products) {
     for (const prod of products) {
       if (!prod.active) continue;
       const prodNameLower = prod.name.toLowerCase();
-      const keywords = prodNameLower.split(/[\s\-\(\)]+/).filter((w) => w.length > 3);
+      // Kata umum seperti "asinan" / "buah" dibuang supaya tidak semua produk ikut terdeteksi
+      const GENERIC_WORDS = ['asinan', 'buah', 'segar', 'spesial', 'premium', 'merah', 'porsi'];
+      const keywords = prodNameLower
+        .split(/[\s\-\(\)]+/)
+        .filter((w) => w.length > 3 && !GENERIC_WORDS.includes(w));
       const nameMatches = keywords.some((kw) => fullTextLower.includes(kw));
 
       // Also check short aliases
@@ -81,6 +85,7 @@ function parseWAText(rawText, products) {
       if (prodNameLower.includes('kiamboy')) aliases.push('kiamboy', 'kiyamboy', 'asinan kiamboy');
       if (prodNameLower.includes('pomegranate') || prodNameLower.includes('delima')) aliases.push('pomegranate', 'delima');
       if (prodNameLower.includes('salad')) aliases.push('salad', 'salad buah');
+      if (prodNameLower.startsWith('kuah')) aliases.push('kuah asinan', 'kuah botol', 'kuahnya aja', 'kuah aja');
       const aliasMatch = aliases.some((a) => fullTextLower.includes(a));
 
       if (nameMatches || aliasMatch) {
@@ -90,7 +95,7 @@ function parseWAText(rawText, products) {
           new RegExp(`(?:${keywords.join('|')})\\s*(?:x|pcs|porsi|cup)?\\s*(\\d+)`, 'i'),
         ];
         let qty = 1;
-        for (const qPat of qtyPatterns) {
+        for (const qPat of keywords.length > 0 ? qtyPatterns : []) {
           const qm = fullText.match(qPat);
           if (qm && qm[1]) {
             qty = parseInt(qm[1], 10) || 1;
@@ -423,6 +428,16 @@ export default function OrdersManager() {
 
     const subtotal = newOrder.items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
+    // Ambil modal (HPP) dari data produk supaya estimasi laba order manual ikut terhitung
+    const getItemHPP = (item) => {
+      const prod = (products || []).find((p) => p.id === item.productId);
+      const variant =
+        prod?.variants?.find((v) => v.id === item.variantId) ||
+        prod?.variants?.find((v) => v.size === item.size);
+      return variant?.hpp || Math.round((item.price || 0) * 0.5);
+    };
+    const totalHPP = newOrder.items.reduce((sum, item) => sum + getItemHPP(item) * item.qty, 0);
+
     const orderData = {
       id: generateOrderId(),
       date: new Date().toISOString(),
@@ -436,10 +451,13 @@ export default function OrdersManager() {
         name: item.name,
         size: item.size,
         price: item.price,
+        hpp: getItemHPP(item),
         emoji: item.emoji,
         qty: item.qty,
       })),
       subtotal,
+      totalHPP,
+      grossProfit: Math.max(0, subtotal - totalHPP),
       total: subtotal,
       shippingCost: 0,
       shippingName: 'Kurir',

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../../app/admin/admin.module.css';
 import { useToast } from '../../hooks/useToast';
-import { CONFIG, DEFAULT_PASSWORD } from '../../lib/constants';
+import { CONFIG } from '../../lib/constants';
 import { useCart } from '../../context/CartContext';
 
 export default function SettingsPanel() {
@@ -49,8 +49,8 @@ export default function SettingsPanel() {
       addToast('Konfirmasi password baru tidak cocok!', 'error');
       return;
     }
-    if (passwords.new.length < 5) {
-      addToast('Password baru minimal 5 karakter!', 'error');
+    if (passwords.new.length < 8) {
+      addToast('Password baru minimal 8 karakter!', 'error');
       return;
     }
 
@@ -66,8 +66,7 @@ export default function SettingsPanel() {
 
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem(CONFIG.STORAGE_KEYS.password, passwords.new);
-        addToast('Password admin berhasil diubah di database MongoDB!', 'success');
+        addToast(data.message || 'Password admin berhasil diubah!', 'success');
         setPasswords({ old: '', new: '', confirm: '' });
       } else {
         addToast(data.error || 'Gagal mengubah password', 'error');

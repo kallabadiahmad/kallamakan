@@ -9,6 +9,10 @@ const SettingsSchema = new mongoose.Schema(
     storeHours: { type: String, default: '09:00 - 21:00 WIB' },
     storeLocation: { type: String, default: 'Jakarta Barat, DKI Jakarta' },
     isOpen: { type: Boolean, default: true },
+    // Daftar id produk bawaan yang sudah pernah dibuat di database.
+    // Produk bawaan hanya dibuat SEKALI, jadi harga yang diedit admin tidak ditimpa
+    // dan produk yang dihapus admin tidak muncul lagi.
+    seededProductIds: { type: [String], default: [] },
     announcement: { type: String, default: '🛒 Form Pemesanan Resmi Kalla Makan • Fast Respon via WhatsApp' },
   },
   { timestamps: true }

@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import styles from './LoginScreen.module.css';
 import { useToast } from '../../hooks/useToast';
-import { CONFIG } from '../../lib/constants';
 
 export default function LoginScreen({ onLoginSuccess }) {
   const [password, setPassword] = useState('');
@@ -27,7 +26,6 @@ export default function LoginScreen({ onLoginSuccess }) {
       const data = await res.json();
 
       if (data.success) {
-        localStorage.setItem(CONFIG.STORAGE_KEYS.session, 'active');
         addToast('Login berhasil! Selamat datang Admin Kalla Makan.', 'success');
         onLoginSuccess();
       } else {
@@ -36,14 +34,7 @@ export default function LoginScreen({ onLoginSuccess }) {
       }
     } catch (err) {
       console.error('Login error:', err);
-      // Fallback local check
-      if (password === '@Kalla123') {
-        localStorage.setItem(CONFIG.STORAGE_KEYS.session, 'active');
-        addToast('Login berhasil', 'success');
-        onLoginSuccess();
-      } else {
-        setError('Password salah atau koneksi bermasalah!');
-      }
+      setError('Koneksi ke server bermasalah. Coba lagi.');
     } finally {
       setIsLoading(false);
     }

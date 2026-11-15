@@ -14,6 +14,8 @@ const ProductSchema = new mongoose.Schema(
     description: { type: String, default: '' },
     category: { type: String, default: 'kiamboy' },
     badge: { type: String, default: '' },
+    emoji: { type: String, default: '' },
+    theme: { type: String, default: '' },
     image: { type: String, default: '' },
     active: { type: Boolean, default: true },
     variants: [VariantSchema],

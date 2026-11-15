@@ -16,27 +16,67 @@ import { useCart } from '../../context/CartContext';
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const { toasts, addToast, removeToast } = useToast();
-  const { orders, expenses } = useCart();
+  const { orders, expenses, refreshAllData } = useCart();
 
   useEffect(() => {
-    // Check if user is logged in
-    const session = localStorage.getItem(CONFIG.STORAGE_KEYS.session);
-    if (session === 'active') {
-      setIsAuthenticated(true);
+    // Cek sesi ke server (cookie httpOnly yang ditandatangani)
+    let cancelled = false;
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.authenticated) {
+          setIsAuthenticated(true);
+          refreshAllData();
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsCheckingSession(false);
+      });
+
+    // Bersihkan penanda login versi lama
+    try {
+      localStorage.removeItem(CONFIG.STORAGE_KEYS.session);
+      localStorage.removeItem(CONFIG.STORAGE_KEYS.password);
+    } catch {
+      // abaikan
     }
-    
-    // Set custom font class for admin specifically
+
     document.body.style.background = 'var(--bg-body)';
     return () => {
+      cancelled = true;
       document.body.style.background = ''; // reset on unmount
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem(CONFIG.STORAGE_KEYS.session);
+  // Kalau sesi habis saat sedang dipakai, kembali ke layar login
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    const onUnauthorized = () => {
+      setIsAuthenticated(false);
+      addToast('Sesi admin habis, silakan login ulang', 'warning');
+    };
+    window.addEventListener('kalla:unauthorized', onUnauthorized, { once: true });
+    return () => window.removeEventListener('kalla:unauthorized', onUnauthorized);
+  }, [isAuthenticated, addToast]);
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    refreshAllData();
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // abaikan
+    }
     setIsAuthenticated(false);
     addToast('Anda telah logout', 'warning');
   };
@@ -58,11 +98,19 @@ export default function AdminPage() {
     }
   };
 
+  if (isCheckingSession) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+        Memeriksa sesi admin...
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <>
         <Toast toasts={toasts} removeToast={removeToast} />
-        <LoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />
+        <LoginScreen onLoginSuccess={handleLoginSuccess} />
       </>
     );
   }

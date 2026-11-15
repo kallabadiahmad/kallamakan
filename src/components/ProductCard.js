@@ -30,15 +30,25 @@ export default function ProductCard({ product, onAddToCartNotice }) {
     product.category?.toLowerCase().includes('pomegranate') ||
     product.name?.toLowerCase().includes('pomegranate') ||
     product.name?.toLowerCase().includes('delima') ||
-    product.theme === 'pomegranite';
+    product.theme === 'pomegranite' ||
+    product.theme === 'pomegranate';
 
   const isSalad =
     product.category?.toLowerCase().includes('salad') ||
     product.name?.toLowerCase().includes('salad') ||
     product.theme === 'salad';
 
+  const themeKey = (product.theme || '').toLowerCase();
+  const isKuah =
+    themeKey === 'kuah' ||
+    (!themeKey && (product.category?.toLowerCase().includes('kuah') || product.name?.toLowerCase().startsWith('kuah')));
+
   let themeClass = styles.themeKiamboy;
-  if (isPomegranate) {
+  if (isKuah) {
+    themeClass = styles.themeKuah;
+  } else if (themeKey === 'kiamboy' || themeKey === 'kiyamboy') {
+    themeClass = styles.themeKiamboy;
+  } else if (isPomegranate) {
     themeClass = styles.themePomegranate;
   } else if (isSalad) {
     themeClass = styles.themeSalad;
@@ -85,8 +95,8 @@ export default function ProductCard({ product, onAddToCartNotice }) {
                 priority={product.id === 'prod_001' || product.id === 'prod_002'}
               />
             ) : (
-              <div className={`${styles.emojiFallback} ${isSalad ? styles.emojiSalad : isPomegranate ? styles.emojiPomegranate : styles.emojiKiamboy}`}>
-                <span style={{ fontSize: '2.4rem' }}>{product.emoji || (isSalad ? '🥗' : isPomegranate ? '🍇' : '🥭')}</span>
+              <div className={`${styles.emojiFallback} ${isKuah ? styles.emojiKuah : isSalad ? styles.emojiSalad : isPomegranate ? styles.emojiPomegranate : styles.emojiKiamboy}`}>
+                <span style={{ fontSize: '2.4rem' }}>{product.emoji || (isKuah ? '🫙' : isSalad ? '🥗' : isPomegranate ? '🍇' : '🥭')}</span>
               </div>
             )}
             {totalItemQty > 0 && (

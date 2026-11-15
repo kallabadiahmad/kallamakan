@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
+import { requireAdmin } from '@/lib/apiAuth';
 import Product from '@/models/Product';
 import Settings from '@/models/Settings';
 import { DEFAULT_PRODUCTS, DEFAULT_SETTINGS } from '@/lib/constants';
 
-export async function POST() {
+export async function POST(req) {
   try {
+    const authError = await requireAdmin(req);
+    if (authError) return authError;
     await connectDB();
 
     await Product.deleteMany({});

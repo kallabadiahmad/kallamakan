@@ -24,6 +24,7 @@ const OrderSchema = new mongoose.Schema(
     totalHPP: { type: Number, default: 0 },
     grossProfit: { type: Number, default: 0 },
     shippingCost: { type: Number, default: 0 },
+    shippingMethod: { type: String, default: 'kurir' },
     shippingName: { type: String, default: 'Kurir' },
     discount: { type: Number, default: 0 },
     voucherCode: { type: String, default: null },

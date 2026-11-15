@@ -21,6 +21,18 @@ export function CartProvider({ children }) {
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
+  // true setelah daftar produk terbaru berhasil diambil dari server
+  const [productsSynced, setProductsSynced] = useState(false);
+
+  // Fetch ke API admin. Kalau sesi habis (401), halaman admin diberi tahu.
+  const apiFetch = useCallback(async (url, options = {}) => {
+    const res = await fetch(url, options);
+    if (res.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('kalla:unauthorized'));
+    }
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok && data.success !== false, status: res.status, data };
+  }, []);
 
   // Fetch initial data from MongoDB API
   const refreshAllData = useCallback(async () => {
@@ -32,6 +44,7 @@ export function CartProvider({ children }) {
         const prodData = await prodRes.json();
         if (prodData.success && Array.isArray(prodData.products) && prodData.products.length > 0) {
           setProductsState(prodData.products);
+          setProductsSynced(true);
         }
       }
 
@@ -45,8 +58,10 @@ export function CartProvider({ children }) {
       }
 
       // Orders
-      const ordRes = await fetch('/api/orders');
-      if (ordRes.ok) {
+      const ordRes = await fetch('/api/orders', { cache: 'no-store' });
+      if (ordRes.status === 401) {
+        setOrdersState([]);
+      } else if (ordRes.ok) {
         const ordData = await ordRes.json();
         if (ordData.success && Array.isArray(ordData.orders)) {
           setOrdersState(ordData.orders);
@@ -54,8 +69,10 @@ export function CartProvider({ children }) {
       }
 
       // Expenses
-      const expRes = await fetch('/api/expenses');
-      if (expRes.ok) {
+      const expRes = await fetch('/api/expenses', { cache: 'no-store' });
+      if (expRes.status === 401) {
+        setExpensesState([]);
+      } else if (expRes.ok) {
         const expData = await expRes.json();
         if (expData.success && Array.isArray(expData.expenses)) {
           setExpensesState(expData.expenses);
@@ -98,20 +115,29 @@ export function CartProvider({ children }) {
     });
 
     try {
-      await fetch('/api/products', {
+      const { ok, data } = await apiFetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(product),
       });
+      if (!ok) {
+        return { success: false, error: data.error || 'Gagal menyimpan ke database' };
+      }
+      // Pakai data versi database supaya tampilan sama persis dengan yang tersimpan
+      if (data.product) {
+        setProductsState((prev) => prev.map((p) => (p.id === data.product.id ? data.product : p)));
+      }
+      return { success: true };
     } catch (e) {
       console.error('Failed to sync product to MongoDB:', e);
+      return { success: false, error: 'Koneksi ke database gagal' };
     }
   };
 
   const deleteProduct = async (id) => {
     setProductsState((prev) => prev.filter((p) => p.id !== id));
     try {
-      await fetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await apiFetch(`/api/products?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
     } catch (e) {
       console.error('Failed to delete product from MongoDB:', e);
     }
@@ -131,13 +157,15 @@ export function CartProvider({ children }) {
   const saveOrder = async (order) => {
     setOrdersState((prev) => [order, ...(prev || []).filter((o) => o.id !== order.id)]);
     try {
-      await fetch('/api/orders', {
+      const { ok, data } = await apiFetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(order),
       });
+      return ok ? { success: true, order: data.order } : { success: false, error: data.error || 'Gagal menyimpan pesanan' };
     } catch (e) {
       console.error('Failed to save order to MongoDB:', e);
+      return { success: false, error: 'Koneksi ke database gagal' };
     }
   };
 
@@ -146,7 +174,7 @@ export function CartProvider({ children }) {
       prev.map((o) => (o.id === id ? { ...o, status } : o))
     );
     try {
-      await fetch('/api/orders', {
+      await apiFetch('/api/orders', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status }),
@@ -159,7 +187,7 @@ export function CartProvider({ children }) {
   const deleteOrder = async (id) => {
     setOrdersState((prev) => prev.filter((o) => o.id !== id));
     try {
-      await fetch(`/api/orders?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await apiFetch(`/api/orders?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
     } catch (e) {
       console.error('Failed to delete order from MongoDB:', e);
     }
@@ -179,20 +207,22 @@ export function CartProvider({ children }) {
   const saveExpense = async (expense) => {
     setExpensesState((prev) => [expense, ...(prev || []).filter((e) => e.id !== expense.id)]);
     try {
-      await fetch('/api/expenses', {
+      const { ok, data } = await apiFetch('/api/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(expense),
       });
+      return ok ? { success: true } : { success: false, error: data.error || 'Gagal menyimpan pengeluaran' };
     } catch (e) {
       console.error('Failed to save expense to MongoDB:', e);
+      return { success: false, error: 'Koneksi ke database gagal' };
     }
   };
 
   const deleteExpense = async (id) => {
     setExpensesState((prev) => prev.filter((e) => e.id !== id));
     try {
-      await fetch(`/api/expenses?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await apiFetch(`/api/expenses?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
     } catch (e) {
       console.error('Failed to delete expense from MongoDB:', e);
     }
@@ -208,7 +238,7 @@ export function CartProvider({ children }) {
     }
     setSettingsState(nextValue);
     try {
-      await fetch('/api/settings', {
+      await apiFetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nextValue),
@@ -258,6 +288,40 @@ export function CartProvider({ children }) {
       }
     });
   };
+
+  // Kalau admin mengubah harga / menonaktifkan produk, keranjang yang tersimpan
+  // di browser pelanggan ikut disesuaikan supaya tidak checkout dengan harga lama.
+  useEffect(() => {
+    if (!productsSynced || !Array.isArray(products) || products.length === 0) return;
+    setCartItems((prev) => {
+      if (!Array.isArray(prev) || prev.length === 0) return prev;
+      let changed = false;
+      const next = [];
+      prev.forEach((item) => {
+        const prod = products.find((p) => p.id === item.productId);
+        if (!prod || prod.active === false) {
+          changed = true;
+          return;
+        }
+        const variants = Array.isArray(prod.variants) ? prod.variants : [];
+        const variant =
+          variants.find((v) => `${prod.id}-${v.id || v.size}` === item.id) ||
+          variants.find((v) => v.size === item.size);
+        if (!variant) {
+          changed = true;
+          return;
+        }
+        const hpp = variant.hpp || Math.round(variant.price * 0.5);
+        if (item.price !== variant.price || item.hpp !== hpp || item.name !== prod.name || item.size !== variant.size) {
+          changed = true;
+          next.push({ ...item, name: prod.name, size: variant.size, price: variant.price, hpp });
+        } else {
+          next.push(item);
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [products, productsSynced, setCartItems]);
 
   const removeFromCart = (cartItemId) => {
     setCartItems((prev) => prev.filter((item) => item.id !== cartItemId));

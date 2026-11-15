@@ -62,6 +62,22 @@ export const DEFAULT_PRODUCTS = [
       { id: 'v_500', size: '500ml (Porsi Puas)', price: 35000, hpp: 18000 },
     ],
   },
+  {
+    id: 'prod_004',
+    name: 'Kuah Asinan',
+    description: 'Kuah asinan asam manis pedas dalam botol. Tinggal siram ke buah potong di rumah. Simpan di kulkas.',
+    category: 'kuah',
+    theme: 'kuah',
+    badge: 'Produk Baru',
+    emoji: '🫙',
+    image: '',
+    active: true,
+    // Harga awal. Ubah lewat Admin > Produk > ✏️ (perubahan tersimpan permanen).
+    variants: [
+      { id: 'v_250', size: 'Botol 250ml', price: 15000, hpp: 7000 },
+      { id: 'v_500', size: 'Botol 500ml', price: 25000, hpp: 12000 },
+    ],
+  },
 ];
 
 export const SHIPPING_METHODS = [
@@ -138,7 +154,6 @@ export const DEFAULT_SETTINGS = {
   announcement: '🛒 Form Pemesanan Resmi Kalla Makan • Fast Respon via WhatsApp',
 };
 
-export const DEFAULT_PASSWORD = '@Kalla123';
 
 export const EXPENSE_CATEGORIES = {
   ads_ctwa: 'Biaya Iklan CTWA (Meta/TikTok Ads)',

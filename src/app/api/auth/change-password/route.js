@@ -1,10 +1,22 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Admin from '@/models/Admin';
-import { DEFAULT_PASSWORD } from '@/lib/constants';
+import {
+  DEFAULT_ADMIN_PASSWORD,
+  requireAdmin,
+  checkPassword,
+  hashPassword,
+  passwordVersion,
+  createSessionToken,
+  setSessionCookie,
+  forgetPasswordVersionCache,
+} from '@/lib/apiAuth';
 
 export async function POST(req) {
   try {
+    const authError = await requireAdmin(req);
+    if (authError) return authError;
+
     await connectDB();
     const { oldPassword, newPassword } = await req.json();
 
@@ -15,31 +27,34 @@ export async function POST(req) {
       );
     }
 
-    if (newPassword.length < 5) {
+    if (String(newPassword).length < 8) {
       return NextResponse.json(
-        { success: false, error: 'Password baru minimal 5 karakter' },
+        { success: false, error: 'Password baru minimal 8 karakter' },
         { status: 400 }
       );
     }
 
     let admin = await Admin.findOne({ username: 'admin' });
     if (!admin) {
-      admin = await Admin.create({ username: 'admin', password: DEFAULT_PASSWORD });
+      admin = await Admin.create({ username: 'admin', password: hashPassword(DEFAULT_ADMIN_PASSWORD) });
     }
 
-    if (admin.password !== oldPassword) {
+    if (!checkPassword(oldPassword, admin.password)) {
       return NextResponse.json({ success: false, error: 'Password lama salah!' }, { status: 400 });
     }
 
-    admin.password = newPassword;
+    admin.password = hashPassword(newPassword);
     await admin.save();
+    forgetPasswordVersionCache();
 
-    return NextResponse.json({
+    // Sesi di HP/laptop lain otomatis keluar. Sesi yang sedang dipakai diperbarui.
+    const response = NextResponse.json({
       success: true,
-      message: 'Password admin berhasil diubah di database!',
+      message: 'Password admin berhasil diubah. Perangkat lain perlu login ulang.',
     });
+    return setSessionCookie(response, createSessionToken(passwordVersion(admin.password)));
   } catch (error) {
     console.error('Error changing admin password:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Gagal mengubah password' }, { status: 500 });
   }
 }

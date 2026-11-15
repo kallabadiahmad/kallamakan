@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
+import { requireAdmin } from '@/lib/apiAuth';
 import Expense from '@/models/Expense';
 
-export async function GET() {
+export async function GET(req) {
   try {
+    const authError = await requireAdmin(req);
+    if (authError) return authError;
     await connectDB();
     const expenses = await Expense.find({}).sort({ createdAt: -1 }).lean();
     return NextResponse.json({ success: true, expenses });
@@ -15,6 +18,8 @@ export async function GET() {
 
 export async function POST(req) {
   try {
+    const authError = await requireAdmin(req);
+    if (authError) return authError;
     await connectDB();
     const body = await req.json();
 
@@ -25,10 +30,24 @@ export async function POST(req) {
       );
     }
 
+    const amount = Math.round(Number(body.amount));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return NextResponse.json({ success: false, error: 'Jumlah pengeluaran tidak valid' }, { status: 400 });
+    }
+    const data = {
+      id: String(body.id),
+      date: String(body.date || '').slice(0, 10),
+      title: String(body.title || '').slice(0, 200),
+      desc: String(body.desc || '').slice(0, 300),
+      notes: String(body.notes || '').slice(0, 300),
+      amount,
+      category: String(body.category || 'lainnya'),
+    };
+
     const expense = await Expense.findOneAndUpdate(
-      { id: body.id },
-      { ...body },
-      { new: true, upsert: true }
+      { id: data.id },
+      { $set: data },
+      { returnDocument: 'after', upsert: true }
     );
 
     return NextResponse.json({ success: true, expense });
@@ -40,6 +59,8 @@ export async function POST(req) {
 
 export async function DELETE(req) {
   try {
+    const authError = await requireAdmin(req);
+    if (authError) return authError;
     await connectDB();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');

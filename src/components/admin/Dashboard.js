@@ -4,17 +4,11 @@ import React, { useMemo, useState } from 'react';
 import styles from '../../app/admin/admin.module.css';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { ORDER_STATUSES } from '../../lib/constants';
+import { summarize, isCountedOrder, toDateKey } from '../../lib/finance';
+import QuickExpenseInput from './QuickExpenseInput';
 
-// Helper: get YYYY-MM-DD string from a date string or Date object, using local timezone
-function toLocalDateString(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '';
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+// Tanggal lokal YYYY-MM-DD (pakai helper yang sama dengan halaman Keuangan)
+const toLocalDateString = toDateKey;
 
 function getTodayString() {
   return toLocalDateString(new Date());
@@ -56,54 +50,20 @@ function MiniBarChart({ data, color = '#059669', height = 60 }) {
 export default function Dashboard({ orders, expenses }) {
   const today = getTodayString();
 
-  // ===== STATS CALCULATION =====
+  // ===== STATS CALCULATION (rumus di src/lib/finance.js) =====
   const stats = useMemo(() => {
     const allOrders = orders || [];
-    const validOrders = allOrders.filter((o) => o.status !== 'cancelled');
+    const allExpenses = expenses || [];
+    const validOrders = allOrders.filter(isCountedOrder);
 
     // --- ALL TIME ---
-    let totalRevenue = 0;
-    let totalOrderCount = validOrders.length;
-    let totalExpenses = 0;
-    let adsExpense = 0;
-
-    validOrders.forEach((order) => {
-      totalRevenue += order.subtotal || order.total || 0;
-    });
-
-    (expenses || []).forEach((exp) => {
-      const amt = Number(exp.amount || 0);
-      totalExpenses += amt;
-      if (exp.category === 'ads_ctwa') {
-        adsExpense += amt;
-      }
-    });
-
-    // PROFIT BERSIH = OMSET - PENGELUARAN
-    const netProfit = totalRevenue - totalExpenses;
-    const margin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0.0';
-
-    const aov = totalOrderCount > 0 ? Math.round(totalRevenue / totalOrderCount) : 0;
-    const roas = adsExpense > 0 ? (totalRevenue / adsExpense).toFixed(2) : '∞';
+    const all = summarize(allOrders, allExpenses);
 
     // --- TODAY ---
-    const todayOrders = validOrders.filter((o) => toLocalDateString(o.date) === today);
-    let todayRevenue = 0;
-    let todayOrderCount = todayOrders.length;
-
-    todayOrders.forEach((order) => {
-      todayRevenue += order.subtotal || order.total || 0;
-    });
-
-    let todayExpenses = 0;
-    (expenses || []).forEach((exp) => {
-      if (toLocalDateString(exp.date) === today) {
-        todayExpenses += Number(exp.amount || 0);
-      }
-    });
-
-    // Profit Bersih Hari Ini = Omset Hari Ini - Pengeluaran Hari Ini
-    const todayNetProfit = todayRevenue - todayExpenses;
+    const todaySum = summarize(
+      allOrders.filter((o) => toLocalDateString(o.date) === today),
+      allExpenses.filter((e) => toLocalDateString(e.date) === today)
+    );
 
     // --- DAILY BREAKDOWN (last 7 days) ---
     const dailyData = [];
@@ -114,53 +74,40 @@ export default function Dashboard({ orders, expenses }) {
       const dayLabel = d.toLocaleDateString('id-ID', { weekday: 'short' });
       const dateLabel = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
 
-      let dayRevenue = 0;
-      let dayExpenses = 0;
-      let dayOrders = 0;
+      const dayOrders = validOrders.filter((o) => toLocalDateString(o.date) === dateStr);
+      const dayExpenses = allExpenses.filter((e) => toLocalDateString(e.date) === dateStr);
+      const daySum = summarize(dayOrders, dayExpenses);
+
       const productMap = {}; // { productKey: { name, emoji, size, qty, totalPrice } }
-
-      validOrders.forEach((o) => {
-        if (toLocalDateString(o.date) === dateStr) {
-          dayRevenue += o.subtotal || o.total || 0;
-          dayOrders++;
-
-          // Aggregate product items
-          if (Array.isArray(o.items)) {
-            o.items.forEach((item) => {
-              const key = `${item.name || 'Produk'}__${item.size || ''}`;
-              if (!productMap[key]) {
-                productMap[key] = {
-                  name: item.name || 'Produk',
-                  emoji: item.emoji || '📦',
-                  size: item.size || '',
-                  qty: 0,
-                  totalPrice: 0,
-                };
-              }
-              productMap[key].qty += item.qty || 1;
-              productMap[key].totalPrice += (item.price || 0) * (item.qty || 1);
-            });
-          }
+      dayOrders.forEach((o) => {
+        if (Array.isArray(o.items)) {
+          o.items.forEach((item) => {
+            const key = `${item.name || 'Produk'}__${item.size || ''}`;
+            if (!productMap[key]) {
+              productMap[key] = {
+                name: item.name || 'Produk',
+                emoji: item.emoji || '📦',
+                size: item.size || '',
+                qty: 0,
+                totalPrice: 0,
+              };
+            }
+            productMap[key].qty += item.qty || 1;
+            productMap[key].totalPrice += (item.price || 0) * (item.qty || 1);
+          });
         }
       });
 
-      (expenses || []).forEach((exp) => {
-        if (toLocalDateString(exp.date) === dateStr) {
-          dayExpenses += Number(exp.amount || 0);
-        }
-      });
-
-      // Convert productMap to sorted array
       const products = Object.values(productMap).sort((a, b) => b.qty - a.qty);
 
       dailyData.push({
         date: dateStr,
         label: dateLabel,
         shortLabel: dayLabel,
-        revenue: dayRevenue,
-        expenses: dayExpenses,
-        profit: dayRevenue - dayExpenses,
-        orderCount: dayOrders,
+        revenue: daySum.revenue,
+        expenses: daySum.totalExpenses,
+        profit: daySum.netProfit,
+        orderCount: daySum.orderCount,
         isToday: dateStr === today,
         products,
       });
@@ -168,19 +115,28 @@ export default function Dashboard({ orders, expenses }) {
 
     return {
       // All time
-      totalRevenue,
-      totalOrderCount,
-      adsExpense,
-      totalExpenses,
-      netProfit,
-      margin,
-      aov,
-      roas,
+      totalRevenue: all.revenue,
+      totalPending: all.pendingRevenue,
+      totalDiscount: all.discount,
+      totalOrderCount: all.orderCount,
+      adsExpense: all.adsExpense,
+      totalExpenses: all.totalExpenses,
+      netProfit: all.netProfit,
+      margin: all.margin,
+      aov: all.aov,
+      roas: all.roas,
+      cpa: all.cpa,
       // Today
-      todayRevenue,
-      todayOrderCount,
-      todayExpenses,
-      todayNetProfit,
+      todayRevenue: todaySum.revenue,
+      todayPending: todaySum.pendingRevenue,
+      todayDiscount: todaySum.discount,
+      todayOrderCount: todaySum.orderCount,
+      todayExpenses: todaySum.totalExpenses,
+      todayAdsExpense: todaySum.adsExpense,
+      todayNetProfit: todaySum.netProfit,
+      todayAov: todaySum.aov,
+      todayRoas: todaySum.roas,
+      todayCpa: todaySum.cpa,
       // Chart data
       dailyData,
     };
@@ -205,6 +161,12 @@ export default function Dashboard({ orders, expenses }) {
   const displayExpenses = isToday ? stats.todayExpenses : stats.totalExpenses;
   const displayNetProfit = isToday ? stats.todayNetProfit : stats.netProfit;
   const displayOrderCount = isToday ? stats.todayOrderCount : stats.totalOrderCount;
+  const displayPending = isToday ? stats.todayPending : stats.totalPending;
+  const displayDiscount = isToday ? stats.todayDiscount : stats.totalDiscount;
+  const displayAds = isToday ? stats.todayAdsExpense : stats.adsExpense;
+  const displayRoas = isToday ? stats.todayRoas : stats.roas;
+  const displayAov = isToday ? stats.todayAov : stats.aov;
+  const displayCpa = isToday ? stats.todayCpa : stats.cpa;
 
   // Card styles
   const metricCardStyle = {
@@ -309,8 +271,13 @@ export default function Dashboard({ orders, expenses }) {
               {formatCurrency(displayRevenue)}
             </div>
             <div style={metricSubStyle}>
-              {displayOrderCount} pesanan {isToday ? 'hari ini' : 'terdata'}
+              {displayOrderCount} pesanan {isToday ? 'hari ini' : 'terdata'} (tanpa ongkir{displayDiscount > 0 ? `, sudah dipotong diskon ${formatCurrency(displayDiscount)}` : ''})
             </div>
+            {displayPending > 0 && (
+              <div style={{ ...metricSubStyle, color: '#D97706', marginTop: '2px' }}>
+                ⏳ {formatCurrency(displayPending)} masih menunggu konfirmasi
+              </div>
+            )}
           </div>
         </div>
 
@@ -325,7 +292,7 @@ export default function Dashboard({ orders, expenses }) {
               {formatCurrency(displayExpenses)}
             </div>
             <div style={{ ...metricSubStyle, color: '#D97706' }}>
-              {isToday ? 'Biaya tercatat hari ini' : `Iklan CTWA: ${formatCurrency(stats.adsExpense)}`}
+              Iklan CTWA: {formatCurrency(displayAds)}
             </div>
           </div>
         </div>
@@ -359,10 +326,10 @@ export default function Dashboard({ orders, expenses }) {
               🎯 ROAS Iklan
             </div>
             <div style={{ ...metricValueStyle, color: '#3B82F6' }}>
-              {stats.roas}x
+              {displayRoas}x
             </div>
             <div style={metricSubStyle}>
-              Revenue / Biaya Iklan
+              Omzet ÷ Biaya Iklan{displayCpa > 0 ? ` • ${formatCurrency(displayCpa)}/pesanan` : ''}
             </div>
           </div>
         </div>
@@ -374,7 +341,7 @@ export default function Dashboard({ orders, expenses }) {
               📊 AOV (Avg Order)
             </div>
             <div style={{ ...metricValueStyle, color: '#8B5CF6' }}>
-              {formatCurrency(stats.aov)}
+              {formatCurrency(displayAov)}
             </div>
             <div style={metricSubStyle}>
               Rata-rata per pesanan
@@ -382,6 +349,9 @@ export default function Dashboard({ orders, expenses }) {
           </div>
         </div>
       </div>
+
+      {/* Catat pengeluaran langsung dari dashboard */}
+      <QuickExpenseInput compact />
 
       {/* Profit Formula Explanation Card */}
       <div className={styles.card} style={{ marginBottom: '24px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>

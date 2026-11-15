@@ -35,8 +35,11 @@ export function generateOrderId() {
     now.getFullYear().toString().slice(-2) +
     (now.getMonth() + 1).toString().padStart(2, '0') +
     now.getDate().toString().padStart(2, '0');
-  const randNum = Math.floor(100 + Math.random() * 900);
-  return `KM-${dateStr}-${randNum}`;
+  // 4 karakter acak (huruf/angka) supaya nomor pesanan di hari yang sama tidak bentrok
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let rand = '';
+  for (let i = 0; i < 4; i++) rand += chars[Math.floor(Math.random() * chars.length)];
+  return `KM-${dateStr}-${rand}`;
 }
 
 export function cleanPhone(phone) {
