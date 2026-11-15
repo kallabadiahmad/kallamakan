@@ -159,7 +159,8 @@ export default function OrdersManager() {
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const [selectedQty, setSelectedQty] = useState(1);
 
-  const allOrders = orders || [];
+  // Rekap pendapatan harian bukan pesanan yang perlu diproses, jadi tidak ditampilkan di sini
+  const allOrders = (orders || []).filter((o) => o.source !== 'rekap');
   const filteredOrders = filter === 'all' ? allOrders : allOrders.filter((o) => o.status === filter);
   const activeProducts = (products || []).filter((p) => p.active !== false);
 
@@ -465,6 +466,7 @@ export default function OrdersManager() {
       paymentMethod: newOrder.paymentMethod,
       paymentBank: 'DANA',
       status: 'pending',
+      source: 'manual',
     };
 
     await saveOrder(orderData);

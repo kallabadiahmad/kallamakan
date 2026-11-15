@@ -4,6 +4,8 @@
    Omzet        = harga produk yang terjual − diskon voucher
                   (ongkir TIDAK dihitung karena dibayar ke kurir)
    Pesanan yang dihitung = semua kecuali status "Dibatalkan"
+   Rekap harian (source: 'rekap') = pendapatan sehari dari catatan; masuk omzet,
+                  tapi tidak dihitung sebagai jumlah pesanan / AOV / HPP
    Profit Bersih = Omzet − Total Pengeluaran yang dicatat
                   (bahan baku, iklan, packaging, operasional, lain-lain)
    Estimasi HPP  = modal per porsi × jumlah terjual (hanya perkiraan,
@@ -15,6 +17,11 @@ export const CONFIRMED_STATUSES = ['transferred', 'processing', 'shipped', 'comp
 
 export function isCountedOrder(order) {
   return !!order && order.status !== 'cancelled';
+}
+
+/** Rekap pendapatan harian (dari catatan), bukan pesanan per pembeli */
+export function isRecapOrder(order) {
+  return !!order && order.source === 'rekap';
 }
 
 export function isPendingOrder(order) {
@@ -111,12 +118,21 @@ export function summarize(orders = [], expenses = [], products = []) {
   let pendingRevenue = 0;
   let hpp = 0;
   let itemsSold = 0;
+  let recapRevenue = 0;
+  let recapDays = 0;
+  let orderRevenueOnly = 0;
 
   counted.forEach((o) => {
     const r = orderRevenue(o);
     revenue += r;
     grossSales += orderItemsTotal(o);
     discount += Math.min(num(o.discount), orderItemsTotal(o));
+    if (isRecapOrder(o)) {
+      recapRevenue += r;
+      recapDays += 1;
+      return;
+    }
+    orderRevenueOnly += r;
     hpp += orderHPP(o, products);
     if (isPendingOrder(o)) pendingRevenue += r;
     if (Array.isArray(o.items)) itemsSold += o.items.reduce((s, it) => s + itemQty(it), 0);
@@ -133,9 +149,9 @@ export function summarize(orders = [], expenses = [], products = []) {
     if (cat === 'ads_ctwa') adsExpense += amt;
   });
 
-  const orderCount = counted.length;
+  const orderCount = counted.length - recapDays; // pesanan per pembeli saja
   const netProfit = revenue - totalExpenses;
-  const grossProfit = revenue - hpp;
+  const grossProfit = orderRevenueOnly - hpp; // estimasi, hanya dari pesanan per item
 
   return {
     orderCount,
@@ -143,6 +159,9 @@ export function summarize(orders = [], expenses = [], products = []) {
     grossSales,
     discount,
     revenue,
+    recapRevenue,
+    recapDays,
+    orderRevenue: orderRevenueOnly,
     pendingRevenue,
     confirmedRevenue: revenue - pendingRevenue,
     hpp,
@@ -153,10 +172,11 @@ export function summarize(orders = [], expenses = [], products = []) {
     expenseByCategory,
     netProfit,
     margin: revenue > 0 ? ((netProfit / revenue) * 100).toFixed(1) : '0.0',
-    aov: orderCount > 0 ? Math.round(revenue / orderCount) : 0,
-    avgProfitPerOrder: orderCount > 0 ? Math.round(netProfit / orderCount) : 0,
+    aov: orderCount > 0 ? Math.round(orderRevenueOnly / orderCount) : 0,
+    avgProfitPerOrder: orderCount > 0 && recapDays === 0 ? Math.round(netProfit / orderCount) : 0,
     roas: adsExpense > 0 ? (revenue / adsExpense).toFixed(2) : '∞',
     // Biaya iklan per pesanan (CPA) — penting untuk CTWA
-    cpa: adsExpense > 0 && orderCount > 0 ? Math.round(adsExpense / orderCount) : 0,
+    // (tidak dihitung kalau ada rekap harian, karena jumlah pesanannya tidak tercatat)
+    cpa: adsExpense > 0 && orderCount > 0 && recapDays === 0 ? Math.round(adsExpense / orderCount) : 0,
   };
 }

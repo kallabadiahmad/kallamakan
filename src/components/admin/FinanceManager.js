@@ -122,7 +122,7 @@ export default function FinanceManager() {
   const exportCSV = () => {
     let csv = 'Tanggal,Tipe,Kategori/Customer,Jumlah (Rp),Keterangan\n';
     filteredOrders.forEach((o) => {
-      csv += `${formatDate(o.date)},Pemasukan Order,"${(o.customer || '').replace(/"/g, "'")}",${orderRevenue(o)},"${o.id} - ${o.paymentMethod} - ${o.status}"\n`;
+      csv += `${formatDate(o.date)},${o.source === 'rekap' ? 'Rekap Harian' : 'Pemasukan Order'},"${(o.customer || '').replace(/"/g, "'")}",${orderRevenue(o)},"${o.id} - ${o.paymentMethod} - ${o.status}"\n`;
     });
     filteredExpenses.forEach((e) => {
       csv += `${formatDate(e.date)},Pengeluaran,${EXPENSE_CATEGORIES[e.category] || e.category},-${e.amount},"${e.desc || ''}"\n`;
@@ -208,6 +208,11 @@ export default function FinanceManager() {
             <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '3px' }}>
               {metrics.orderCount} pesanan • AOV {formatCurrency(metrics.aov)}
             </div>
+            {metrics.recapDays > 0 && (
+              <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '2px' }}>
+                📒 + rekap harian {metrics.recapDays} hari ({formatCurrency(metrics.recapRevenue)})
+              </div>
+            )}
             {metrics.pendingRevenue > 0 && (
               <div style={{ fontSize: '0.72rem', color: '#D97706', marginTop: '2px' }}>
                 ⏳ {formatCurrency(metrics.pendingRevenue)} menunggu konfirmasi
@@ -325,7 +330,7 @@ export default function FinanceManager() {
               <tr>
                 <td style={{ color: '#94A3B8', paddingLeft: '20px', fontSize: '0.8rem' }}>
                   Info: estimasi modal per porsi {formatCurrency(metrics.totalHPP)} → estimasi laba kotor {formatCurrency(metrics.grossProfit)}
-                  <br />(tidak dikurangkan lagi, karena belanja buah sudah dicatat di pengeluaran Bahan Baku)
+                  <br />(tidak dikurangkan lagi, karena belanja buah sudah dicatat di pengeluaran Bahan Baku{metrics.recapDays > 0 ? '; rekap harian tidak ikut dihitung' : ''})
                 </td>
                 <td />
               </tr>
@@ -419,7 +424,9 @@ export default function FinanceManager() {
                     filteredOrders.map((o) => (
                       <tr key={o.id}>
                         <td>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>#{o.id}</div>
+                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                            {o.source === 'rekap' ? '📒 Rekap harian' : `#${o.id}`}
+                          </div>
                           <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{formatDate(o.date)}</div>
                         </td>
                         <td>

@@ -119,6 +119,8 @@ export default function Dashboard({ orders, expenses }) {
       totalPending: all.pendingRevenue,
       totalDiscount: all.discount,
       totalOrderCount: all.orderCount,
+      totalRecapDays: all.recapDays,
+      totalRecapRevenue: all.recapRevenue,
       adsExpense: all.adsExpense,
       totalExpenses: all.totalExpenses,
       netProfit: all.netProfit,
@@ -131,6 +133,8 @@ export default function Dashboard({ orders, expenses }) {
       todayPending: todaySum.pendingRevenue,
       todayDiscount: todaySum.discount,
       todayOrderCount: todaySum.orderCount,
+      todayRecapDays: todaySum.recapDays,
+      todayRecapRevenue: todaySum.recapRevenue,
       todayExpenses: todaySum.totalExpenses,
       todayAdsExpense: todaySum.adsExpense,
       todayNetProfit: todaySum.netProfit,
@@ -142,13 +146,13 @@ export default function Dashboard({ orders, expenses }) {
     };
   }, [orders, expenses, today]);
 
-  const recentOrders = (orders || []).slice(0, 8);
+  const recentOrders = (orders || []).filter((o) => o.source !== 'rekap').slice(0, 8);
 
   // Order status count summary
   const statusCounts = useMemo(() => {
     const counts = {};
     Object.keys(ORDER_STATUSES).forEach((key) => { counts[key] = 0; });
-    (orders || []).forEach((o) => { counts[o.status] = (counts[o.status] || 0) + 1; });
+    (orders || []).filter((o) => o.source !== 'rekap').forEach((o) => { counts[o.status] = (counts[o.status] || 0) + 1; });
     return counts;
   }, [orders]);
 
@@ -162,6 +166,8 @@ export default function Dashboard({ orders, expenses }) {
   const displayNetProfit = isToday ? stats.todayNetProfit : stats.netProfit;
   const displayOrderCount = isToday ? stats.todayOrderCount : stats.totalOrderCount;
   const displayPending = isToday ? stats.todayPending : stats.totalPending;
+  const displayRecapDays = isToday ? stats.todayRecapDays : stats.totalRecapDays;
+  const displayRecapRevenue = isToday ? stats.todayRecapRevenue : stats.totalRecapRevenue;
   const displayDiscount = isToday ? stats.todayDiscount : stats.totalDiscount;
   const displayAds = isToday ? stats.todayAdsExpense : stats.adsExpense;
   const displayRoas = isToday ? stats.todayRoas : stats.roas;
@@ -273,6 +279,11 @@ export default function Dashboard({ orders, expenses }) {
             <div style={metricSubStyle}>
               {displayOrderCount} pesanan {isToday ? 'hari ini' : 'terdata'} (tanpa ongkir{displayDiscount > 0 ? `, sudah dipotong diskon ${formatCurrency(displayDiscount)}` : ''})
             </div>
+            {displayRecapDays > 0 && (
+              <div style={{ ...metricSubStyle, marginTop: '2px' }}>
+                📒 termasuk {formatCurrency(displayRecapRevenue)} dari rekap catatan harian ({displayRecapDays} hari)
+              </div>
+            )}
             {displayPending > 0 && (
               <div style={{ ...metricSubStyle, color: '#D97706', marginTop: '2px' }}>
                 ⏳ {formatCurrency(displayPending)} masih menunggu konfirmasi
@@ -338,7 +349,7 @@ export default function Dashboard({ orders, expenses }) {
         <div className={styles.card} style={metricCardStyle}>
           <div className={styles.cardBody}>
             <div style={metricLabelStyle}>
-              📊 AOV (Avg Order)
+              📊 AOV (Rata-rata per Pesanan)
             </div>
             <div style={{ ...metricValueStyle, color: '#8B5CF6' }}>
               {formatCurrency(displayAov)}

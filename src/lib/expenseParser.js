@@ -37,6 +37,10 @@ export const CATEGORY_KEYWORDS = {
     'mayonaise', 'mayonnaise', 'keju', 'susu', 'skm', 'saus', 'pewarna', 'perasa', 'bumbu',
     'bahan', 'bahan baku', 'pasar', 'belanja pasar', 'kerupuk', 'krupuk', 'yakult', 'yogurt',
     'madu', 'jahe', 'serai', 'sereh', 'daun jeruk', 'kayu manis', 'cengkeh',
+    // nama toko & bahan yang sering dicatat
+    'buh', 'bit', 'pir', 'songkit', 'jeruk songkit', 'natade', 'natadecoco', 'nata de', 'jus', 'juice',
+    'boga kita', 'boga', 'istana', 'istana buah', 'buah istana', 'central', 'central buah', 'duta', 'duta buah',
+    'diamond', 'diamond jus', 'pome', 'jus pome', 'jambu kristal', 'mangga muda', 'krim', 'cream',
   ],
   operasional: [
     'listrik', 'token', 'pln', 'air', 'pdam', 'galon', 'es batu', 'es', 'gas', 'elpiji', 'lpg',
@@ -124,7 +128,12 @@ export function findAmount(text) {
     // angka yang menempel ke huruf di depannya (mis. "a4") dilewati
     if (start > 0 && /[a-z]/i.test(t[start - 1])) continue;
     const n = toNumber(m[1]);
-    if (n >= 1000) candidates.push({ amount: Math.round(n), start, end: start + m[1].length, rank: 1 });
+    if (n >= 1000) {
+      candidates.push({ amount: Math.round(n), start, end: start + m[1].length, rank: 1 });
+    } else if (/^\d{1,3}\.\d{2}$/.test(m[1]) && !unit) {
+      // "35.00" -> kemungkinan maksudnya 35.000 (kurang satu nol)
+      candidates.push({ amount: Number(m[1].replace('.', '')) * 10, start, end: start + m[1].length, rank: 0, warn: true });
+    }
   }
 
   if (candidates.length === 0) return null;
@@ -169,8 +178,8 @@ export function findDate(text, today = new Date()) {
   }
   // 12 nov / 12 november
   const monthNames = Object.keys(MONTHS).sort((a, b) => b.length - a.length).join('|');
-  if ((m = t.match(new RegExp(`\\b(?:tgl\\.?\\s*|tanggal\\s*)?(\\d{1,2})\\s*(${monthNames})\\b`)))) {
-    const d = build(Number(m[1]), MONTHS[m[2]], 0);
+  if ((m = t.match(new RegExp(`\\b(?:tgl\\.?\\s*|tanggal\\s*)?(\\d{1,2})\\s*(${monthNames})\\b(?:\\s*(\\d{4})\\b)?`)))) {
+    const d = build(Number(m[1]), MONTHS[m[2]], m[3] ? Number(m[3]) : 0);
     if (d) return { date: toDateKey(d), match: m[0] };
   }
   // tgl 12 / tanggal 12 (bulan ini, atau bulan lalu kalau tanggalnya belum lewat)
@@ -215,72 +224,133 @@ function cleanTitle(text, removeRanges) {
     .replace(/[=:@]+/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/^[\s,.;\-+•*·▪–]+|[\s,.;\-+•*·▪–]+$/g, '')
+    .replace(/\s+(dan|sama|&)$/i, '')
     .trim();
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
 }
 
+// Baris pemasukan / pendapatan harian
+const INCOME_RE = /^(pendapatan|pemasukan|omset|omzet|penjualan|jualan|income|hasil\s+jualan|uang\s+masuk|masuk)\b/i;
+// Baris hitungan total yang tidak perlu disimpan
+const TOTAL_RE = /^(total|sisa|saldo|untung|laba|profit|bersih|jumlah)\b/i;
+const MONTH_WORDS = new RegExp(`\\b(${Object.keys(MONTHS).join('|')})\\b`, 'i');
+const ALL_KEYWORDS = Object.values(CATEGORY_KEYWORDS).flat();
+
+function stripNoise(text) {
+  return String(text)
+    .replace(/[​-‏‪-‮⁦-⁩﻿]/g, '') // karakter tak terlihat dari WhatsApp
+    .replace(/\[([^\]]*)\]\(tel:[^)]*\)/gi, '$1') // "[825000-57000](tel:...)" -> "825000-57000"
+    .trim();
+}
+
 /**
- * Ubah teks bebas jadi daftar pengeluaran.
- * Hasil: [{ key, raw, title, amount, category, date, ok }]
+ * Ubah teks bebas jadi daftar pengeluaran (dan pendapatan harian).
+ * Hasil: [{ key, type: 'expense'|'income', raw, title, amount, category, date, ok, warn }]
+ * Juga mengembalikan baris yang dilewati lewat properti `skipped` pada array.
  */
 export function parseExpenseText(input, today = new Date()) {
   const results = [];
+  const skipped = [];
   let contextDate = toDateKey(today);
 
   const lines = String(input || '').split(/\r?\n/);
-  lines.forEach((line, lineIdx) => {
-    const trimmed = line.trim();
+  lines.forEach((rawLine, lineIdx) => {
+    const trimmed = stripNoise(rawLine);
     if (!trimmed) return;
+    if (TOTAL_RE.test(trimmed.replace(/^[\s\-•*]+/, ''))) return; // "Total: 1060-385 = 332"
 
     // Tanggal di baris yang berisi barang -> berlaku untuk baris itu saja.
-    // Baris yang isinya cuma tanggal ("kemarin:") -> berlaku untuk baris-baris di bawahnya.
+    // Baris yang isinya cuma tanggal ("kemarin:", "04 oktober 2026") -> berlaku untuk baris di bawahnya.
     const lineDate = findDate(trimmed, today);
     let lineText = trimmed;
     let rowDate = contextDate;
-    if (lineDate) {
-      if (lineDate.match) lineText = lineText.replace(new RegExp(escapeRe(lineDate.match), 'i'), ' ');
-      const onlyDate = !findAmount(lineText) && !/[a-z]{3,}/i.test(lineText.replace(/\b(tgl|tanggal|belanja|pengeluaran|catatan)\b/gi, ''));
-      if (onlyDate) {
-        contextDate = lineDate.date;
-        return;
-      }
-      rowDate = lineDate.date;
+    if (lineDate && lineDate.match) {
+      lineText = lineText.replace(new RegExp(escapeRe(lineDate.match), 'i'), ' ');
     }
+    // Tahun di judul seperti "KALLA nov 2026" bukan nominal
+    if (MONTH_WORDS.test(lineText)) lineText = lineText.replace(/\b20\d{2}\b/g, ' ');
 
-    // Pecah per koma / titik koma / "+" / " dan " kalau tiap bagian punya nominal sendiri
-    const parts = lineText.split(/\s*(?:;|\+|,(?!\d{3})|\bdan\b|\bsama\b|\btrus\b|\blalu\b)\s*/i).filter(Boolean);
-    const partsWithAmount = parts.filter((p) => findAmount(p));
-    const segments = partsWithAmount.length > 1 ? parts : [lineText];
+    const lettersOnly = lineText.replace(/\b(tgl|tanggal|belanja|pengeluaran|catatan|kalla|makan)\b/gi, '').replace(/[^a-z]/gi, '');
+    if (lineDate && !findAmount(lineText) && lettersOnly.length < 3) {
+      contextDate = lineDate.date;
+      return;
+    }
+    if (lineDate) rowDate = lineDate.date;
 
-    segments.forEach((seg, segIdx) => {
-      const text = seg.trim();
-      if (!text) return;
-      const amt = findAmount(text);
-      if (!amt) {
-        if (segments.length > 1) return; // potongan tanpa harga di baris campuran dilewati
+    // Satu baris bisa berisi beberapa item: "Pendapatan: 685.000 -buah bit 100.000 -jeruk 45.000"
+    const chunks = lineText.split(/\s+-\s*(?=[a-z])/i).map((c) => c.trim()).filter(Boolean);
+
+    chunks.forEach((chunk, chunkIdx) => {
+      const isIncome = INCOME_RE.test(chunk.replace(/^[\s\-•*]+/, ''));
+
+      // "buah 85+25+105 = 215" -> pakai angka setelah "=" (ditulis dalam ribuan kalau kecil)
+      let segments;
+      let eqAmount = null;
+      if (chunk.includes('=')) {
+        const right = chunk.split('=').pop();
+        const amt = findAmount(right);
+        const n = amt ? amt.amount : Number(String(right).replace(/[^\d]/g, ''));
+        if (n > 0) eqAmount = { amount: n < 1000 ? n * 1000 : n, warn: n < 1000 };
+        segments = [chunk.split('=')[0]];
+      } else if (isIncome) {
+        segments = [chunk];
+      } else {
+        // Pecah per koma / titik koma / "+" / " dan " kalau tiap bagian punya nominal sendiri
+        const parts = chunk.split(/\s*(?:;|\+|,(?!\d{3})|\bdan\b|\bsama\b|\btrus\b|\blalu\b)\s*/i).filter(Boolean);
+        const partsWithAmount = parts.filter((p) => findAmount(p));
+        segments = partsWithAmount.length > 1 ? parts : [chunk];
+      }
+
+      segments.forEach((seg, segIdx) => {
+        const text = seg.trim();
+        if (!text) return;
+        const key = `${lineIdx}-${chunkIdx}-${segIdx}`;
+        const amt = eqAmount ? null : findAmount(text);
+        const amount = eqAmount ? eqAmount.amount : amt ? amt.amount : 0;
+        let title = cleanTitle(text, amt ? [amt] : []);
+        if (eqAmount) title = cleanTitle(text.replace(/[\d+.,\s]+$/, ''), []) || title;
+
+        if (!amount) {
+          const hasKeyword = ALL_KEYWORDS.some((kw) => hasWord(text.toLowerCase(), kw));
+          // Baris judul / catatan tanpa angka (mis. "Kalla makan") dilewati, tapi dicatat
+          if (segments.length > 1) return;
+          if (!hasKeyword && !isIncome) {
+            if (/[a-z]{3,}/i.test(text)) skipped.push(trimmed);
+            return;
+          }
+        }
+
+        if (isIncome) {
+          results.push({
+            key,
+            type: 'income',
+            raw: trimmed,
+            title: 'Pendapatan harian',
+            amount,
+            category: 'pendapatan',
+            date: rowDate,
+            ok: amount > 0,
+            // "Pendapatan: 1.870" kemungkinan maksudnya 1.870.000
+            warn: amount > 0 && amount < 10000,
+          });
+          return;
+        }
+
         results.push({
-          key: `${lineIdx}-${segIdx}`,
+          key,
+          type: 'expense',
           raw: trimmed,
-          title: cleanTitle(text, []),
-          amount: 0,
+          title: title || 'Pengeluaran',
+          amount,
           category: guessCategory(text),
           date: rowDate,
-          ok: false,
+          ok: amount > 0,
+          warn: (eqAmount && eqAmount.warn) || (amt && amt.warn) || (amount > 0 && amount < 1000),
         });
-        return;
-      }
-      const title = cleanTitle(text, [amt]) || 'Pengeluaran';
-      results.push({
-        key: `${lineIdx}-${segIdx}`,
-        raw: trimmed,
-        title,
-        amount: amt.amount,
-        category: guessCategory(text),
-        date: rowDate,
-        ok: true,
       });
     });
   });
 
+  results.skipped = skipped;
   return results;
 }

@@ -32,6 +32,8 @@ const OrderSchema = new mongoose.Schema(
     paymentMethod: { type: String, default: 'transfer' },
     paymentBank: { type: String, default: 'DANA' },
     status: { type: String, default: 'pending' },
+    // 'web' = dari form pembeli, 'manual' = input admin, 'rekap' = rekap pendapatan harian dari catatan
+    source: { type: String, default: 'web' },
   },
   { timestamps: true }
 );
